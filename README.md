@@ -130,12 +130,15 @@
 ## 📊 GitHub Statistics
 
 <p align="center">
-  <img src="https://github-readme-stats.vercel.app/api?username=khalid-naami&show_icons=true&theme=dark&hide_border=true&bg_color=0D1117&title_color=6A5ACD&icon_color=6A5ACD&text_color=ffffff" alt="Khalid's GitHub Stats" width="48%" />
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=khalid-naami&layout=compact&theme=dark&hide_border=true&bg_color=0D1117&title_color=6A5ACD&text_color=ffffff" alt="Top Languages" width="40%" />
+  <img src="https://github-stats-alpha.vercel.app/api?username=khalid-naami&cc=0D1117&tc=6A5ACD&ic=ffffff&bc=0D1117" alt="Khalid's GitHub Stats" width="55%" />
 </p>
 
 <p align="center">
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=khalid-naami&theme=dark&hide_border=true&background=0D1117&stroke=6A5ACD&ring=6A5ACD&fire=FF6B6B&currStreakLabel=6A5ACD" alt="GitHub Streak" width="60%" />
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=khalid-naami&layout=compact&theme=dark&hide_border=true&bg_color=0D1117&title_color=6A5ACD&text_color=ffffff&langs_count=8" alt="Top Languages" width="45%" />
+</p>
+
+<p align="center">
+  <img src="https://streak-stats.demolab.com/?user=khalid-naami&theme=dark&hide_border=true&background=0D1117&stroke=6A5ACD&ring=6A5ACD&fire=FF6B6B&currStreakLabel=6A5ACD" alt="GitHub Streak" width="55%" />
 </p>
 
 ---

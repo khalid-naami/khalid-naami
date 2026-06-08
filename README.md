@@ -52,16 +52,6 @@
 
 ---
 
-## 🏆 GitHub Trophies
-
-<p align="center">
-  <a href="https://github.com/ryo-ma/github-profile-trophy">
-    <img src="https://github-profile-trophy.vercel.app/?username=khalid-naami&theme=darkhub&no-frame=true&row=1&column=7" alt="khalid-naami trophies" />
-  </a>
-</p>
-
----
-
 ## ✍️ Latest Blog Posts
 
 <h3 align="center">Financial Intelligence · Market Research</h3>

@@ -134,10 +134,6 @@
 </p>
 
 <p align="center">
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=khalid-naami&layout=compact&theme=dark&hide_border=true&bg_color=0D1117&title_color=6A5ACD&text_color=ffffff&langs_count=8" alt="Top Languages" width="45%" />
-</p>
-
-<p align="center">
   <img src="https://streak-stats.demolab.com/?user=khalid-naami&theme=dark&hide_border=true&background=0D1117&stroke=6A5ACD&ring=6A5ACD&fire=FF6B6B&currStreakLabel=6A5ACD" alt="GitHub Streak" width="55%" />
 </p>
 

@@ -34,6 +34,8 @@
 
 **Founder, Owner, & CEO** at **[Dashboard Options](https://dashboardoptions.com)** — a professional-grade quantitative analytics platform that strips away market noise and reveals **real-time institutional options flow**.
 
+⚠️ **Notice:** *The **Dashboard Options** project has been discontinued due to server costs and lack of an investor/funding.*
+
 > *"The market is a machine for turning noise into signal — if you have the right decoder."* — Khalid Naami
 
 - 🔭 Building **[Dashboard Options](https://dashboardoptions.com)** — GEX tracking, 3D volatility surfaces & institutional flow data

@@ -39,7 +39,7 @@
 - 🔭 Building **Dashboard Options** — GEX tracking, 3D volatility surfaces & institutional flow data
 - 📊 Expert in **Quantitative Finance**, **Options Greeks**, and **Financial AI systems**
 - 🌍 Strategic analyst specializing in **Geopolitics** and **Global Macroeconomics** (OSINT)
-- 💬 Ask me about **Python, Options Data, Market Microstructure, Rust, React**
+- 💬 Ask me about **Python, JavaScript, Options Data, Market Microstructure, Rust, React**
 - 🌐 Personal site: **[khalidnaami.com](https://khalidnaami.com)**
 - 📫 Reach me: **khalidnaami66@gmail.com**
 - 🗣️ Languages: **Arabic · English · French**

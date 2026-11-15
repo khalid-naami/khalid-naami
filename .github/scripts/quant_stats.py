@@ -1,0 +1,708 @@
+#!/usr/bin/env python3
+"""
+Generates custom dark/light Quantitative Terminal SVGs ($KHALID) for GitHub Profile README.
+Uses GitHub GraphQL API (via ACCESS_TOKEN or built-in GITHUB_TOKEN) and zero external packages.
+"""
+
+from __future__ import annotations
+
+import datetime
+import json
+import math
+import os
+import sys
+import urllib.error
+import urllib.request
+from xml.sax.saxutils import escape
+
+
+GRAPHQL_URL = "https://api.github.com/graphql"
+DEFAULT_USER = "khalid-naami"
+
+FALLBACK_LANG_COLORS = {
+    "Python": "#3572A5",
+    "TypeScript": "#3178C6",
+    "JavaScript": "#F1E05A",
+    "Rust": "#DEA584",
+    "Dart": "#00B4AB",
+    "Java": "#B07219",
+    "HTML": "#E34C26",
+    "CSS": "#563D7C",
+    "Shell": "#89E051",
+    "Jupyter Notebook": "#DA5B0B",
+}
+
+THEMES = {
+    "dark": {
+        "bg_outer": "#0d1117",
+        "bg_panel": "#161b22",
+        "bg_elevated": "#1c2128",
+        "border": "#30363d",
+        "grid": "#21262d",
+        "text_primary": "#f0f6fc",
+        "text_secondary": "#8b949e",
+        "text_muted": "#6e7681",
+        "accent": "#7c6ef6",
+        "accent_soft": "#6A5ACD",
+        "accent_pill_bg": "#27214d",
+        "accent_pill_text": "#c4b5fd",
+        "bull": "#3fb950",
+        "bull_soft": "#238636",
+        "bear": "#f85149",
+        "bear_soft": "#da3633",
+        "ma_line": "#a371f7",
+        "vol_cyan": "#58a6ff",
+        "ticker_bg": "#0b0f14",
+    },
+    "light": {
+        "bg_outer": "#ffffff",
+        "bg_panel": "#f6f8fa",
+        "bg_elevated": "#ffffff",
+        "border": "#d0d7de",
+        "grid": "#eaeef2",
+        "text_primary": "#1f2328",
+        "text_secondary": "#57606a",
+        "text_muted": "#6e7781",
+        "accent": "#6A5ACD",
+        "accent_soft": "#5b4bc4",
+        "accent_pill_bg": "#eeecfb",
+        "accent_pill_text": "#5544b8",
+        "bull": "#1a7f37",
+        "bull_soft": "#2da44e",
+        "bear": "#cf222e",
+        "bear_soft": "#e5534b",
+        "ma_line": "#6A5ACD",
+        "vol_cyan": "#0969da",
+        "ticker_bg": "#f0f3f6",
+    },
+}
+
+
+def graphql_request(query: str, variables: dict, token: str) -> dict:
+    """Executes a GitHub GraphQL v4 request using stdlib urllib."""
+    body = json.dumps({"query": query, "variables": variables}).encode("utf-8")
+    req = urllib.request.Request(
+        GRAPHQL_URL,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "User-Agent": "khalid-naami-quant-profile",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    if "errors" in payload and not payload.get("data"):
+        raise RuntimeError(f"GitHub GraphQL error: {payload['errors']}")
+    return payload["data"]
+
+
+def fetch_github_stats(username: str, token: str) -> dict:
+    """Fetches 1-year contribution calendar, repositories, stars, followers, and language bytes."""
+    query_user = """
+    query($login: String!, $cursor: String) {
+      user(login: $login) {
+        followers {
+          totalCount
+        }
+        repositories(
+          first: 100
+          after: $cursor
+          ownerAffiliations: OWNER
+          isFork: false
+          orderBy: {field: STARGAZERS, direction: DESC}
+        ) {
+          totalCount
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+          nodes {
+            name
+            stargazerCount
+            languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
+              edges {
+                size
+                node {
+                  name
+                  color
+                }
+              }
+            }
+          }
+        }
+        contributionsCollection {
+          totalCommitContributions
+          restrictedContributionsCount
+          contributionCalendar {
+            totalContributions
+            weeks {
+              contributionDays {
+                contributionCount
+                date
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+    data = graphql_request(query_user, {"login": username, "cursor": None}, token)
+    user = data["user"]
+    repos_conn = user["repositories"]
+    repo_nodes = list(repos_conn["nodes"])
+
+    while repos_conn["pageInfo"]["hasNextPage"]:
+        next_data = graphql_request(
+            query_user,
+            {"login": username, "cursor": repos_conn["pageInfo"]["endCursor"]},
+            token,
+        )
+        repos_conn = next_data["user"]["repositories"]
+        repo_nodes.extend(repos_conn["nodes"])
+
+    total_repos = repos_conn["totalCount"]
+    total_stars = sum(r.get("stargazerCount", 0) for r in repo_nodes)
+    followers = user["followers"]["totalCount"]
+
+    lang_totals: dict[str, int] = {}
+    lang_colors: dict[str, str] = {}
+    for repo in repo_nodes:
+        for edge in repo.get("languages", {}).get("edges", []):
+            name = edge["node"]["name"]
+            size = int(edge["size"])
+            color = edge["node"].get("color") or FALLBACK_LANG_COLORS.get(name, "#8b949e")
+            lang_totals[name] = lang_totals.get(name, 0) + size
+            lang_colors[name] = color
+
+    contrib = user["contributionsCollection"]
+    calendar = contrib["contributionCalendar"]
+    total_commits = int(contrib["totalCommitContributions"]) + int(contrib["restrictedContributionsCount"])
+    total_contributions = int(calendar["totalContributions"])
+
+    weeks = []
+    days_flat = []
+    for w in calendar["weeks"]:
+        day_counts = [int(d["contributionCount"]) for d in w["contributionDays"]]
+        weeks.append(day_counts)
+        days_flat.extend(w["contributionDays"])
+
+    # Compute current and longest daily active streaks
+    longest_streak = 0
+    running = 0
+    active_days = 0
+    for d in days_flat:
+        c = int(d["contributionCount"])
+        if c > 0:
+            active_days += 1
+            running += 1
+            longest_streak = max(longest_streak, running)
+        else:
+            running = 0
+
+    current_streak = 0
+    # Allow today (last entry) to be 0 if user hasn't committed yet today
+    rev_days = list(reversed(days_flat))
+    if rev_days and int(rev_days[0]["contributionCount"]) == 0:
+        rev_days = rev_days[1:]
+    for d in rev_days:
+        if int(d["contributionCount"]) > 0:
+            current_streak += 1
+        else:
+            break
+
+    total_bytes = sum(lang_totals.values())
+    sorted_langs = sorted(lang_totals.items(), key=lambda kv: kv[1], reverse=True)
+    top_langs = []
+    if total_bytes > 0:
+        top4 = sorted_langs[:4]
+        used_bytes = sum(sz for _, sz in top4)
+        for name, sz in top4:
+            top_langs.append(
+                {
+                    "name": name,
+                    "pct": round((sz / total_bytes) * 100.0, 1),
+                    "color": lang_colors.get(name, "#8b949e"),
+                }
+            )
+        if len(sorted_langs) > 4 and total_bytes > used_bytes:
+            top_langs.append(
+                {
+                    "name": "Other",
+                    "pct": round(((total_bytes - used_bytes) / total_bytes) * 100.0, 1),
+                    "color": "#8b949e",
+                }
+            )
+
+    return {
+        "username": username,
+        "synced_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        "live": True,
+        "total_commits": total_commits,
+        "total_contributions": total_contributions,
+        "total_repos": total_repos,
+        "total_stars": total_stars,
+        "followers": followers,
+        "active_days": active_days,
+        "current_streak": current_streak,
+        "longest_streak": longest_streak,
+        "weeks": weeks,
+        "languages": top_langs,
+    }
+
+
+def empty_initial_stats(username: str) -> dict:
+    """Safe zero-state baseline before the first GitHub Actions sync runs."""
+    return {
+        "username": username,
+        "synced_at": "AWAITING SYNC",
+        "live": False,
+        "total_commits": 0,
+        "total_contributions": 0,
+        "total_repos": 0,
+        "total_stars": 0,
+        "followers": 0,
+        "active_days": 0,
+        "current_streak": 0,
+        "longest_streak": 0,
+        "weeks": [[0] * 7 for _ in range(20)],
+        "languages": [],
+    }
+
+
+def build_ohlc_candles(weeks: list[list[int]], count: int = 20) -> list[dict]:
+    """Converts weekly contribution lists into OHLC candles for the last `count` weeks."""
+    if not weeks:
+        weeks = [[0] * 7 for _ in range(count)]
+    slice_weeks = weeks[-count:]
+    prev_close = sum(weeks[-count - 1]) if len(weeks) > count else sum(slice_weeks[0])
+    candles = []
+    for day_counts in slice_weeks:
+        total = sum(day_counts)
+        peak_day = max(day_counts) if day_counts else 0
+        o_val = prev_close
+        c_val = total
+        h_val = max(o_val, c_val) + max(1, int(round(peak_day * 0.6))) if (o_val or c_val or peak_day) else 0
+        l_val = max(0, min(o_val, c_val) - max(1, int(round(peak_day * 0.25)))) if (o_val or c_val) else 0
+        candles.append(
+            {
+                "open": o_val,
+                "high": h_val,
+                "low": l_val,
+                "close": c_val,
+                "volume": peak_day,
+                "bull": c_val >= o_val,
+            }
+        )
+        prev_close = c_val
+    return candles
+
+
+def ema_series(values: list[float], period: int = 5) -> list[float]:
+    """Computes an Exponential Moving Average series."""
+    if not values:
+        return []
+    k = 2.0 / (period + 1)
+    out = [float(values[0])]
+    for v in values[1:]:
+        out.append(v * k + out[-1] * (1.0 - k))
+    return out
+
+
+def smooth_svg_path(points: list[tuple[float, float]]) -> str:
+    """Creates a smooth Catmull-Rom-like cubic Bezier SVG path through points."""
+    if not points:
+        return ""
+    if len(points) == 1:
+        return f"M {points[0][0]:.1f} {points[0][1]:.1f}"
+    parts = [f"M {points[0][0]:.1f} {points[0][1]:.1f}"]
+    for i in range(len(points) - 1):
+        p0 = points[i - 1] if i > 0 else points[i]
+        p1 = points[i]
+        p2 = points[i + 1]
+        p3 = points[i + 2] if i + 2 < len(points) else points[i + 1]
+        cp1x = p1[0] + (p2[0] - p0[0]) / 6.0
+        cp1y = p1[1] + (p2[1] - p0[1]) / 6.0
+        cp2x = p2[0] - (p3[0] - p1[0]) / 6.0
+        cp2y = p2[1] - (p3[1] - p1[1]) / 6.0
+        parts.append(f"C {cp1x:.1f} {cp1y:.1f}, {cp2x:.1f} {cp2y:.1f}, {p2[0]:.1f} {p2[1]:.1f}")
+    return " ".join(parts)
+
+
+def render_vol_surface(x0: float, y0: float, width: float, height: float, t: dict) -> str:
+    """Renders 5 layered 3D-perspective volatility smile / gamma curves."""
+    layers = []
+    num_slices = 5
+    num_pts = 28
+    for s in range(num_slices):
+        depth = s / (num_slices - 1)  # 0 back -> 1 front
+        y_base = y0 + 14 + depth * (height - 24)
+        x_shift = (1.0 - depth) * 18.0
+        amp = 15.0 + depth * 8.0
+        pts = []
+        for i in range(num_pts):
+            u = i / (num_pts - 1)  # 0..1
+            px = x0 + x_shift + u * (width - 22.0)
+            # Volatility smile + localized gamma peak shape
+            smile = ((u - 0.48) * 2.0) ** 2 * 0.55
+            gamma_wave = math.exp(-((u - 0.52) ** 2) / 0.045) * 0.95
+            ripple = math.sin(u * math.pi * 3.0 + s * 0.65) * 0.14
+            py = y_base - (gamma_wave - smile * 0.35 + ripple) * amp
+            pts.append((px, py))
+        path_d = smooth_svg_path(pts)
+        opacity = 0.25 + depth * 0.70
+        stroke = t["vol_cyan"] if s % 2 == 0 else t["ma_line"]
+        if s == num_slices - 1:
+            stroke = t["bull"]
+        sw = 1.2 + depth * 1.0
+        layers.append(
+            f'<path d="{path_d}" fill="none" stroke="{stroke}" '
+            f'stroke-width="{sw:.2f}" stroke-opacity="{opacity:.2f}" class="wave-{s % 2}"/>'
+        )
+    return "\n    ".join(layers)
+
+
+def format_num(val: int) -> str:
+    return f"{val:,}"
+
+
+def render_svg(stats: dict, theme_name: str) -> str:
+    """Renders the complete 920x440 Quant Terminal SVG for dark or light mode."""
+    t = THEMES[theme_name]
+    candles = build_ohlc_candles(stats["weeks"], 20)
+    closes = [c["close"] for c in candles]
+    ema_vals = ema_series(closes, period=5)
+    best_week = max((sum(w) for w in stats["weeks"]), default=0)
+
+    # Signal index score (transparent metric computed from activity)
+    signal_index = (
+        stats["total_contributions"]
+        + stats["total_stars"] * 12
+        + stats["total_repos"] * 15
+        + stats["current_streak"] * 8
+    )
+
+    last_close = closes[-1] if closes else 0
+    prev_close = closes[-2] if len(closes) > 1 else 0
+    if prev_close > 0:
+        delta_pct = ((last_close - prev_close) / prev_close) * 100.0
+        delta_sign = "+" if delta_pct >= 0 else ""
+        delta_str = f"{delta_sign}{delta_pct:.1f}% WoW"
+        delta_up = delta_pct >= 0
+    elif last_close > 0:
+        delta_str = f"+{last_close} THIS WK"
+        delta_up = True
+    else:
+        delta_str = "READY" if not stats["live"] else "0.0% WoW"
+        delta_up = True
+
+    delta_fg = t["bull"] if delta_up else t["bear"]
+
+    # Chart geometry (Left Panel: x=20..570, y=72..302)
+    plot_x = 38.0
+    plot_y = 104.0
+    plot_w = 482.0
+    plot_h = 152.0
+    vol_base_y = 290.0
+    vol_max_h = 26.0
+
+    max_hi = max([c["high"] for c in candles] + ema_vals + [1])
+    min_lo = 0.0
+    y_span = max(1.0, max_hi - min_lo)
+    max_vol = max([c["volume"] for c in candles] + [1])
+
+    def y_map(val: float) -> float:
+        norm = (val - min_lo) / y_span
+        return plot_y + plot_h - (norm * plot_h)
+
+    # Grid lines + Y-axis labels
+    grid_parts = []
+    for step in range(4):
+        frac = step / 3.0
+        gy = plot_y + plot_h - frac * plot_h
+        gval = int(round(min_lo + frac * y_span)) if stats["live"] else 0
+        grid_parts.append(
+            f'<line x1="{plot_x:.1f}" y1="{gy:.1f}" x2="{plot_x + plot_w:.1f}" y2="{gy:.1f}" '
+            f'stroke="{t["grid"]}" stroke-width="1" stroke-dasharray="3,4"/>'
+        )
+        grid_parts.append(
+            f'<text x="{plot_x + plot_w + 8:.1f}" y="{gy + 3:.1f}" fill="{t["text_muted"]}" '
+            f'font-size="10" class="mono">{gval}</text>'
+        )
+
+    # Candlesticks + volume bars
+    candle_parts = []
+    ema_points = []
+    step_x = plot_w / len(candles)
+    body_w = 11.0
+
+    has_any_commits = any(c["high"] > 0 for c in candles)
+
+    if has_any_commits:
+        for idx, c in enumerate(candles):
+            cx = plot_x + (idx + 0.5) * step_x
+            yh = y_map(c["high"])
+            yl = y_map(c["low"])
+            yo = y_map(c["open"])
+            yc = y_map(c["close"])
+            top_b = min(yo, yc)
+            bot_b = max(yo, yc)
+            bh = max(3.0, bot_b - top_b)
+            col = t["bull"] if c["bull"] else t["bear"]
+            col_soft = t["bull_soft"] if c["bull"] else t["bear_soft"]
+
+            # Volume bar
+            vh = max(2.0, (c["volume"] / max_vol) * vol_max_h) if c["volume"] > 0 else 2.0
+            candle_parts.append(
+                f'<rect x="{cx - body_w / 2:.1f}" y="{vol_base_y - vh:.1f}" width="{body_w:.1f}" '
+                f'height="{vh:.1f}" rx="1.5" fill="{col}" fill-opacity="0.24"/>'
+            )
+            # Wick
+            candle_parts.append(
+                f'<line x1="{cx:.1f}" y1="{yh:.1f}" x2="{cx:.1f}" y2="{yl:.1f}" '
+                f'stroke="{col}" stroke-width="1.6" stroke-linecap="round"/>'
+            )
+            # Body
+            candle_parts.append(
+                f'<rect x="{cx - body_w / 2:.1f}" y="{top_b:.1f}" width="{body_w:.1f}" '
+                f'height="{bh:.1f}" rx="2" fill="{col}" stroke="{col_soft}" stroke-width="0.6"/>'
+            )
+            if idx == len(candles) - 1:
+                candle_parts.append(
+                    f'<circle cx="{cx:.1f}" cy="{yc:.1f}" r="4.5" fill="{col}" fill-opacity="0.28" class="pulse"/>'
+                    f'<circle cx="{cx:.1f}" cy="{yc:.1f}" r="2.2" fill="{col}"/>'
+                )
+            ema_points.append((cx, y_map(ema_vals[idx])))
+
+        ema_d = smooth_svg_path(ema_points)
+        area_d = f"{ema_d} L {ema_points[-1][0]:.1f} {plot_y + plot_h:.1f} L {ema_points[0][0]:.1f} {plot_y + plot_h:.1f} Z"
+        ema_svg = (
+            f'<path d="{area_d}" fill="url(#emaArea)"/>\n    '
+            f'<path d="{ema_d}" fill="none" stroke="{t["ma_line"]}" stroke-width="2.1" stroke-linecap="round"/>'
+        )
+    else:
+        baseline_y = plot_y + plot_h - 8.0
+        ema_svg = (
+            f'<line x1="{plot_x:.1f}" y1="{baseline_y:.1f}" x2="{plot_x + plot_w:.1f}" y2="{baseline_y:.1f}" '
+            f'stroke="{t["accent"]}" stroke-width="1.6" stroke-dasharray="5,5" stroke-opacity="0.65"/>\n    '
+            f'<rect x="{plot_x + 115:.1f}" y="{plot_y + 52:.1f}" width="252" height="28" rx="6" '
+            f'fill="{t["accent_pill_bg"]}" stroke="{t["border"]}" stroke-width="1"/>\n    '
+            f'<text x="{plot_x + 241:.1f}" y="{plot_y + 70:.1f}" text-anchor="middle" '
+            f'fill="{t["accent_pill_text"]}" font-size="11" font-weight="600" class="mono">'
+            f'PUSH TO SYNC LIVE GITHUB CANDLES</text>'
+        )
+
+    # Portfolio Allocation Bar + Legend (Right Bottom Panel: x=584..900, y=194..302)
+    langs = stats["languages"]
+    bar_x = 600.0
+    bar_y = 228.0
+    bar_w = 284.0
+    bar_h = 10.0
+
+    lang_bar_parts = []
+    lang_legend_parts = []
+    if langs:
+        cur_x = bar_x
+        for i, lang in enumerate(langs):
+            seg_w = max(4.0, (lang["pct"] / 100.0) * bar_w)
+            if i == len(langs) - 1:
+                seg_w = max(2.0, (bar_x + bar_w) - cur_x)
+            lang_bar_parts.append(
+                f'<rect x="{cur_x:.1f}" y="{bar_y:.1f}" width="{seg_w:.1f}" height="{bar_h:.1f}" fill="{lang["color"]}"/>'
+            )
+            cur_x += seg_w
+
+        for i, lang in enumerate(langs[:4]):
+            col_idx = i % 2
+            row_idx = i // 2
+            lx = 600.0 + col_idx * 145.0
+            ly = 262.0 + row_idx * 22.0
+            lname = escape(lang["name"][:12])
+            lang_legend_parts.append(
+                f'<circle cx="{lx + 4:.1f}" cy="{ly - 4:.1f}" r="4" fill="{lang["color"]}"/>'
+                f'<text x="{lx + 14:.1f}" y="{ly:.1f}" fill="{t["text_primary"]}" font-size="11.5" class="mono">{lname}</text>'
+                f'<text x="{lx + 134:.1f}" y="{ly:.1f}" text-anchor="end" fill="{t["text_secondary"]}" font-size="11" class="mono">{lang["pct"]:.1f}%</text>'
+            )
+    else:
+        lang_bar_parts.append(
+            f'<rect x="{bar_x:.1f}" y="{bar_y:.1f}" width="{bar_w:.1f}" height="{bar_h:.1f}" fill="{t["grid"]}"/>'
+        )
+        lang_legend_parts.append(
+            f'<text x="742" y="272" text-anchor="middle" fill="{t["text_muted"]}" font-size="11" class="mono">'
+            f'AWAITING REPO ALLOCATION SYNC</text>'
+        )
+
+    # Volatility surface curves (strictly right of x=418 divider)
+    vol_curves = render_vol_surface(434.0, 316.0, 452.0, 62.0, t)
+
+    # Ticker tape text
+    top_stack = " / ".join(escape(l["name"].upper()) for l in langs[:3]) if langs else "PYTHON / TS / RUST"
+    status_tag = "LIVE" if stats["live"] else "STANDBY"
+    ticker_msg = (
+        f"▲ $KHALID QUANT-SYS   •   "
+        f"COMMITS (1Y): {format_num(stats['total_commits'])}   •   "
+        f"CONTRIBUTIONS: {format_num(stats['total_contributions'])}   •   "
+        f"REPOS: {format_num(stats['total_repos'])}   •   "
+        f"STARS: {format_num(stats['total_stars'])}   •   "
+        f"STREAK: {stats['current_streak']}D   •   "
+        f"STACK: {top_stack}   •   "
+        f"STATUS: {status_tag}   •   "
+    )
+    ticker_escaped = escape(ticker_msg)
+    # Approximate width at 11px monospace (~6.65px per char) for seamless duplicate marquee
+    ticker_px = max(780, int(round(len(ticker_msg) * 6.65)))
+
+    svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 440" width="920" height="440" role="img" aria-label="Khalid Naami Quantitative GitHub Terminal">
+  <style>
+    .sans {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }}
+    .mono {{ font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace; }}
+    @keyframes pulse {{
+      0%, 100% {{ opacity: 0.95; transform: scale(1); }}
+      50% {{ opacity: 0.35; transform: scale(1.25); }}
+    }}
+    @keyframes waveBreath {{
+      0%, 100% {{ opacity: 0.85; }}
+      50% {{ opacity: 0.45; }}
+    }}
+    @keyframes tickerMove {{
+      0% {{ transform: translateX(0px); }}
+      100% {{ transform: translateX(-{ticker_px}px); }}
+    }}
+    .pulse {{ transform-box: fill-box; transform-origin: center; animation: pulse 2.4s ease-in-out infinite; }}
+    .wave-0 {{ animation: waveBreath 4.2s ease-in-out infinite; }}
+    .wave-1 {{ animation: waveBreath 5.6s ease-in-out infinite reverse; }}
+    .ticker-track {{ animation: tickerMove 26s linear infinite; }}
+  </style>
+
+  <defs>
+    <linearGradient id="emaArea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="{t['ma_line']}" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="{t['ma_line']}" stop-opacity="0.0"/>
+    </linearGradient>
+    <clipPath id="allocClip">
+      <rect x="{bar_x:.1f}" y="{bar_y:.1f}" width="{bar_w:.1f}" height="{bar_h:.1f}" rx="5"/>
+    </clipPath>
+    <clipPath id="tickerClip">
+      <rect x="114" y="394" width="778" height="32" rx="6"/>
+    </clipPath>
+  </defs>
+
+  <!-- Outer Card -->
+  <rect x="0.5" y="0.5" width="919" height="439" rx="14" fill="{t['bg_outer']}" stroke="{t['border']}" stroke-width="1"/>
+
+  <!-- Header Bar -->
+  <circle cx="30" cy="30" r="7" fill="{t['bull']}" fill-opacity="0.22" class="pulse"/>
+  <circle cx="30" cy="30" r="3.5" fill="{t['bull']}"/>
+  <text x="46" y="36" fill="{t['text_primary']}" font-size="20" font-weight="800" class="mono">$KHALID</text>
+  <rect x="142" y="19" width="124" height="20" rx="5" fill="{t['accent_pill_bg']}" stroke="{t['accent']}" stroke-width="0.7" stroke-opacity="0.5"/>
+  <text x="204" y="33" text-anchor="middle" fill="{t['accent_pill_text']}" font-size="10" font-weight="700" class="mono">QUANT · AI · OSINT</text>
+  <text x="46" y="54" fill="{t['text_secondary']}" font-size="10.5" class="mono">KHALID NAAMI  //  EXECUTION &amp; VOLATILITY TELEMETRY</text>
+
+  <!-- Right Header Index -->
+  <text x="720" y="25" text-anchor="end" fill="{t['text_muted']}" font-size="9.5" font-weight="600" class="mono">SIGNAL INDEX</text>
+  <text x="720" y="47" text-anchor="end" fill="{t['text_primary']}" font-size="19" font-weight="800" class="mono">{format_num(signal_index)}</text>
+
+  <rect x="734" y="16" width="166" height="40" rx="8" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="817" y="32" text-anchor="middle" fill="{delta_fg}" font-size="11.5" font-weight="700" class="mono">{escape(delta_str)}</text>
+  <text x="817" y="48" text-anchor="middle" fill="{t['text_muted']}" font-size="9.5" class="mono">SYNC: {escape(stats['synced_at'])}</text>
+
+  <!-- Left Main Panel: 20W OHLC Candlestick Chart -->
+  <rect x="20" y="72" width="550" height="230" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="36" y="93" fill="{t['text_primary']}" font-size="11.5" font-weight="700" class="mono">20W COMMIT VELOCITY  ·  OHLC CANDLESTICK</text>
+  <circle cx="430" cy="89" r="3.5" fill="{t['bull']}"/>
+  <text x="438" y="93" fill="{t['text_secondary']}" font-size="10" class="mono">BULL</text>
+  <circle cx="476" cy="89" r="3.5" fill="{t['bear']}"/>
+  <text x="484" y="93" fill="{t['text_secondary']}" font-size="10" class="mono">BEAR</text>
+  <line x1="518" y1="89" x2="532" y2="89" stroke="{t['ma_line']}" stroke-width="2"/>
+  <text x="537" y="93" fill="{t['text_secondary']}" font-size="10" class="mono">EMA5</text>
+
+  <g>
+    {chr(10) + "    ".join(grid_parts)}
+    {ema_svg}
+    {chr(10) + "    ".join(candle_parts)}
+  </g>
+
+  <!-- Right Top Panel: Execution Telemetry KPIs -->
+  <rect x="584" y="72" width="316" height="110" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="600" y="92" fill="{t['text_secondary']}" font-size="10.5" font-weight="700" class="mono">EXECUTION TELEMETRY</text>
+  <line x1="600" y1="100" x2="884" y2="100" stroke="{t['grid']}" stroke-width="1"/>
+
+  <text x="600" y="118" fill="{t['text_muted']}" font-size="9.5" class="mono">COMMITS (1Y)</text>
+  <text x="600" y="137" fill="{t['text_primary']}" font-size="17" font-weight="700" class="mono">{format_num(stats['total_commits'])}</text>
+
+  <text x="748" y="118" fill="{t['text_muted']}" font-size="9.5" class="mono">REPOSITORIES</text>
+  <text x="748" y="137" fill="{t['text_primary']}" font-size="17" font-weight="700" class="mono">{format_num(stats['total_repos'])}</text>
+
+  <text x="600" y="156" fill="{t['text_muted']}" font-size="9.5" class="mono">STARS EARNED</text>
+  <text x="600" y="174" fill="{t['accent']}" font-size="17" font-weight="700" class="mono">{format_num(stats['total_stars'])}</text>
+
+  <text x="748" y="156" fill="{t['text_muted']}" font-size="9.5" class="mono">FOLLOWERS</text>
+  <text x="748" y="174" fill="{t['text_primary']}" font-size="17" font-weight="700" class="mono">{format_num(stats['followers'])}</text>
+
+  <!-- Right Bottom Panel: Portfolio Allocation -->
+  <rect x="584" y="194" width="316" height="108" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="600" y="215" fill="{t['text_secondary']}" font-size="10.5" font-weight="700" class="mono">STACK PORTFOLIO ALLOCATION</text>
+  <g clip-path="url(#allocClip)">
+    {chr(10) + "    ".join(lang_bar_parts)}
+  </g>
+  {chr(10) + "  ".join(lang_legend_parts)}
+
+  <!-- Bottom Strip: GEX / 3D Volatility Surface & Streak Telemetry -->
+  <rect x="20" y="314" width="880" height="68" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="36" y="333" fill="{t['text_secondary']}" font-size="10" font-weight="700" class="mono">GEX // VOLATILITY SURFACE &amp; STREAK</text>
+
+  <text x="36" y="352" fill="{t['text_muted']}" font-size="9.5" class="mono">CURRENT STREAK</text>
+  <text x="36" y="370" fill="{t['bull']}" font-size="15" font-weight="700" class="mono">{stats['current_streak']}d</text>
+
+  <text x="144" y="352" fill="{t['text_muted']}" font-size="9.5" class="mono">BEST STREAK</text>
+  <text x="144" y="370" fill="{t['text_primary']}" font-size="15" font-weight="700" class="mono">{stats['longest_streak']}d</text>
+
+  <text x="242" y="352" fill="{t['text_muted']}" font-size="9.5" class="mono">ACTIVE DAYS</text>
+  <text x="242" y="370" fill="{t['text_primary']}" font-size="15" font-weight="700" class="mono">{stats['active_days']}/365</text>
+
+  <text x="336" y="352" fill="{t['text_muted']}" font-size="9.5" class="mono">PEAK WK</text>
+  <text x="336" y="370" fill="{t['accent']}" font-size="15" font-weight="700" class="mono">{best_week}</text>
+
+  <line x1="418" y1="326" x2="418" y2="372" stroke="{t['grid']}" stroke-width="1"/>
+  {vol_curves}
+
+  <!-- Bottom Scrolling Ticker Tape -->
+  <rect x="20" y="394" width="880" height="32" rx="8" fill="{t['ticker_bg']}" stroke="{t['border']}" stroke-width="1"/>
+  <rect x="26" y="399" width="82" height="22" rx="5" fill="{t['accent_pill_bg']}"/>
+  <text x="67" y="414" text-anchor="middle" fill="{t['accent_pill_text']}" font-size="10" font-weight="700" class="mono">LIVE TAPE</text>
+
+  <g clip-path="url(#tickerClip)">
+    <g class="ticker-track">
+      <text x="120" y="414" fill="{t['text_secondary']}" font-size="11" class="mono">{ticker_escaped}</text>
+      <text x="{120 + ticker_px}" y="414" fill="{t['text_secondary']}" font-size="11" class="mono">{ticker_escaped}</text>
+    </g>
+  </g>
+</svg>
+"""
+    return svg
+
+
+def main() -> int:
+    username = os.environ.get("USER_NAME") or DEFAULT_USER
+    token = (os.environ.get("ACCESS_TOKEN") or os.environ.get("GITHUB_TOKEN") or "").strip()
+
+    if "--offline" in sys.argv or not token:
+        if not token and "--offline" not in sys.argv:
+            print("No ACCESS_TOKEN or GITHUB_TOKEN found; generating baseline SVGs.", file=sys.stderr)
+        stats = empty_initial_stats(username)
+    else:
+        stats = fetch_github_stats(username, token)
+
+    for theme_name, filename in (("dark", "quant_dark.svg"), ("light", "quant_light.svg")):
+        content = render_svg(stats, theme_name)
+        with open(filename, "w", encoding="utf-8", newline="\n") as f:
+            f.write(content)
+        print(f"Wrote {filename} (live={stats['live']}, commits={stats['total_commits']})")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

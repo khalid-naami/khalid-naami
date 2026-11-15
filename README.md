@@ -155,11 +155,12 @@
 ## 📊 GitHub Statistics
 
 <p align="center">
-  <img src="https://github-stats-alpha.vercel.app/api?username=khalid-naami&cc=0D1117&tc=6A5ACD&ic=ffffff&bc=0D1117" alt="Khalid's GitHub Stats" width="55%" />
-</p>
-
-<p align="center">
-  <img src="https://streak-stats.demolab.com/?user=khalid-naami&theme=dark&hide_border=true&background=0D1117&stroke=6A5ACD&ring=6A5ACD&fire=FF6B6B&currStreakLabel=6A5ACD" alt="GitHub Streak" width="55%" />
+  <a href="https://github.com/khalid-naami/khalid-naami">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/khalid-naami/khalid-naami/main/quant_dark.svg">
+      <img alt="$KHALID Quantitative GitHub Terminal" src="https://raw.githubusercontent.com/khalid-naami/khalid-naami/main/quant_light.svg" width="100%">
+    </picture>
+  </a>
 </p>
 
 ---

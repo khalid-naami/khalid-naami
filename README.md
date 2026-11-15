@@ -6,9 +6,7 @@
   <a href="https://khalidnaami.com" target="_blank">
     <img src="https://img.shields.io/badge/Personal%20Site-khalidnaami.com-6A5ACD?style=for-the-badge&logo=google-chrome&logoColor=white" />
   </a>
-  <a href="https://dashboardoptions.com" target="_blank">
-    <img src="https://img.shields.io/badge/Company-Dashboard%20Options-0D1117?style=for-the-badge&logo=chartdotjs&logoColor=6A5ACD" />
-  </a>
+  <img src="https://img.shields.io/badge/Company-Dashboard%20Options-0D1117?style=for-the-badge&logo=chartdotjs&logoColor=6A5ACD" />
   <a href="mailto:khalidnaami66@gmail.com">
     <img src="https://img.shields.io/badge/Email-khalidnaami66@gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" />
   </a>
@@ -32,13 +30,13 @@
 
 ## 🏢 About Me & Dashboard Options
 
-**Founder, Owner, & CEO** at **[Dashboard Options](https://dashboardoptions.com)** — a professional-grade quantitative analytics platform that strips away market noise and reveals **real-time institutional options flow**.
+**Founder, Owner, & CEO** at **Dashboard Options** — a professional-grade quantitative analytics platform that strips away market noise and reveals **real-time institutional options flow**.
 
 ⚠️ **Notice:** *The **Dashboard Options** project has been discontinued due to server costs and lack of an investor/funding.*
 
 > *"The market is a machine for turning noise into signal — if you have the right decoder."* — Khalid Naami
 
-- 🔭 Building **[Dashboard Options](https://dashboardoptions.com)** — GEX tracking, 3D volatility surfaces & institutional flow data
+- 🔭 Building **Dashboard Options** — GEX tracking, 3D volatility surfaces & institutional flow data
 - 📊 Expert in **Quantitative Finance**, **Options Greeks**, and **Financial AI systems**
 - 🌍 Strategic analyst specializing in **Geopolitics** and **Global Macroeconomics** (OSINT)
 - 💬 Ask me about **Python, Options Data, Market Microstructure, Rust, React**

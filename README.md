@@ -15,6 +15,10 @@
 </p>
 
 <p align="center">
+  ⚠️ <i><b>Notice:</b> The <b>Dashboard Options</b> project has been discontinued due to server costs and lack of an investor/funding.</i>
+</p>
+
+<p align="center">
   <a href="https://twitter.com/khalidnaami0" target="_blank">
     <img src="https://img.shields.io/badge/Twitter-@khalidnaami0-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" />
   </a>

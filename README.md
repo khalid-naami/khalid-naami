@@ -18,15 +18,6 @@
   <a href="https://twitter.com/khalidnaami0" target="_blank">
     <img src="https://img.shields.io/badge/Twitter-@khalidnaami0-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" />
   </a>
-  <a href="https://www.linkedin.com/in/khalid-naami-a953263bb/" target="_blank">
-    <img src="https://img.shields.io/badge/LinkedIn-khalid--naami-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" />
-  </a>
-  <a href="https://substack.com/@khnaami" target="_blank">
-    <img src="https://img.shields.io/badge/Newsletter-Substack-FF6719?style=for-the-badge&logo=substack&logoColor=white" />
-  </a>
-  <a href="https://www.youtube.com/@DashboardOptions" target="_blank">
-    <img src="https://img.shields.io/badge/YouTube-Dashboard%20Options-FF0000?style=for-the-badge&logo=youtube&logoColor=white" />
-  </a>
 </p>
 
 <p align="center">

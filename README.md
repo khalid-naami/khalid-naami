@@ -30,7 +30,7 @@
 
 ## 🏢 About Me & Dashboard Options
 
-**Founder, Owner, & CEO** at **Dashboard Options** — a professional-grade quantitative analytics platform that strips away market noise and reveals **real-time institutional options flow**.
+**Founder of the Dashboard Options project** — a professional-grade quantitative analytics platform that strips away market noise and reveals **real-time institutional options flow**.
 
 ⚠️ **Notice:** *The **Dashboard Options** project has been discontinued due to server costs and lack of an investor/funding.*
 

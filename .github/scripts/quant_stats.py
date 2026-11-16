@@ -3,7 +3,7 @@
 Generates custom dark/light SVGs for Khalid Naami's GitHub Profile README:
   1. quant_dark.svg / quant_light.svg       ($KHALID Quant Terminal: OHLC Candles, Portfolio Telemetry, Ticker Tape)
   2. vol_surface_dark.svg / vol_surface_light.svg (Animated 3D Isometric Volatility Surface + GEX Pulse)
-  3. osint_hud_dark.svg / osint_hud_light.svg   (Live OSINT / Macro Signal Radar HUD: SPY, ^VIX, BTC-USD, Code Pulse)
+  3. osint_hud_dark.svg / osint_hud_light.svg   (Live OSINT / Macro Signal Radar HUD: SPY, SPX, GOLD, BTC-USD, Code Pulse)
 
 Uses Python standard library only.
 """
@@ -356,10 +356,11 @@ def fetch_yahoo_ticker(symbol: str) -> dict | None:
     return None
 
 
-def fetch_stooq_spy() -> dict | None:
-    """Fallback daily closes for SPY from Stooq CSV."""
+def fetch_stooq_ticker(symbol: str) -> dict | None:
+    """Fallback daily closes from Stooq CSV for symbols like spy.us, ^spx, xauusd."""
     try:
-        raw = http_get_text("https://stooq.com/q/d/l/?s=spy.us&i=d", timeout=12)
+        encoded = urllib.parse.quote(symbol, safe="")
+        raw = http_get_text(f"https://stooq.com/q/d/l/?s={encoded}&i=d", timeout=12)
         rows = list(csv.DictReader(io.StringIO(raw)))
         closes = [float(r["Close"]) for r in rows if r.get("Close")][-10:]
         if not closes:
@@ -392,11 +393,12 @@ def fetch_btc_fallback() -> dict | None:
 
 
 def fetch_macro_signals() -> dict:
-    """Fetches SPY, ^VIX, and BTC-USD from free public market endpoints."""
-    spy = fetch_yahoo_ticker("SPY") or fetch_stooq_spy()
-    vix = fetch_yahoo_ticker("^VIX")
+    """Fetches SPY, SPX (^GSPC), GOLD (GC=F / XAUUSD), and BTC-USD from free public market endpoints."""
+    spy = fetch_yahoo_ticker("SPY") or fetch_stooq_ticker("spy.us")
+    spx = fetch_yahoo_ticker("^GSPC") or fetch_stooq_ticker("^spx")
+    gold = fetch_yahoo_ticker("GC=F") or fetch_yahoo_ticker("XAUUSD=X") or fetch_stooq_ticker("xauusd")
     btc = fetch_yahoo_ticker("BTC-USD") or fetch_btc_fallback()
-    return {"spy": spy, "vix": vix, "btc": btc}
+    return {"spy": spy, "spx": spx, "gold": gold, "btc": btc}
 
 
 def empty_initial_stats(username: str) -> dict:
@@ -994,23 +996,23 @@ def sparkline_svg(values: list[float], x0: float, y0: float, w: float, h: float,
 
 
 def render_osint_hud(stats: dict, macro: dict, theme_name: str) -> str:
-    """Feature #4: Renders the 920x184 OSINT // Macro Signal HUD SVG with animated radar + live feeds."""
+    """Feature #4: Renders the 920x184 OSINT // Macro Signal HUD SVG with animated radar + SPY, SPX, GOLD, BTC, $KHALID."""
     t = THEMES[theme_name]
     spy = macro.get("spy")
-    vix = macro.get("vix")
+    spx = macro.get("spx")
+    gold = macro.get("gold")
     btc = macro.get("btc")
 
-    # VIX regime determination
-    if vix and vix["price"] is not None:
-        vp = vix["price"]
-        if vp >= 25.0:
-            regime, regime_col = "RISK: HIGH VOL", t["bear"]
-        elif vp >= 16.0:
-            regime, regime_col = "RISK: ELEVATED", t["warn"]
-        else:
-            regime, regime_col = "RISK: CALM", t["bull"]
+    has_macro = any(m and m.get("price") is not None for m in (spy, spx, gold, btc))
+    if stats["live"] and has_macro:
+        regime, regime_col = "HUD: LIVE", t["bull"]
+    elif stats["live"]:
+        regime, regime_col = "HUD: ACTIVE", t["accent"]
     else:
-        regime, regime_col = ("HUD: STANDBY" if not stats["live"] else "HUD: ACTIVE"), t["accent"]
+        regime, regime_col = "HUD: STANDBY", t["accent"]
+
+    card_w = 135.0
+    spark_w = card_w - 24.0  # 111.0
 
     def fmt_ticker_card(
         x: float,
@@ -1019,7 +1021,6 @@ def render_osint_hud(stats: dict, macro: dict, theme_name: str) -> str:
         data: dict | None,
         prefix: str,
         decimals: int,
-        invert_color: bool,
         grad_id: str,
     ) -> str:
         if data and data.get("price") is not None:
@@ -1027,41 +1028,42 @@ def render_osint_hud(stats: dict, macro: dict, theme_name: str) -> str:
             pct = float(data.get("pct", 0.0))
             sign = "+" if pct >= 0 else ""
             pct_str = f"{sign}{pct:.2f}%"
-            is_good = (pct <= 0) if invert_color else (pct >= 0)
-            col = t["bull"] if is_good else t["bear"]
-            spark = sparkline_svg(data.get("history") or [], x + 14.0, 128.0, 138.0, 28.0, col, grad_id)
+            col = t["bull"] if pct >= 0 else t["bear"]
+            spark = sparkline_svg(data.get("history") or [], x + 12.0, 128.0, spark_w, 28.0, col, grad_id)
         else:
             val_str = "--"
             pct_str = "AWAITING"
             col = t["text_muted"]
-            spark = sparkline_svg([], x + 14.0, 128.0, 138.0, 28.0, col, grad_id)
+            spark = sparkline_svg([], x + 12.0, 128.0, spark_w, 28.0, col, grad_id)
 
-        return f"""  <rect x="{x:.1f}" y="42" width="166" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
-  <text x="{x + 14:.1f}" y="61" fill="{t['text_primary']}" font-size="11.5" font-weight="800" class="mono">{escape(label)}</text>
-  <text x="{x + 152:.1f}" y="61" text-anchor="end" fill="{t['text_muted']}" font-size="9" class="mono">{escape(sub)}</text>
-  <line x1="{x + 14:.1f}" y1="69" x2="{x + 152:.1f}" y2="69" stroke="{t['grid']}" stroke-width="1"/>
-  <text x="{x + 14:.1f}" y="93" fill="{t['text_primary']}" font-size="16" font-weight="800" class="mono">{escape(val_str)}</text>
-  <text x="{x + 14:.1f}" y="112" fill="{col}" font-size="11" font-weight="700" class="mono">{escape(pct_str)}</text>
+        return f"""  <rect x="{x:.1f}" y="42" width="{card_w:.0f}" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="{x + 12:.1f}" y="61" fill="{t['text_primary']}" font-size="11" font-weight="800" class="mono">{escape(label)}</text>
+  <text x="{x + card_w - 12:.1f}" y="61" text-anchor="end" fill="{t['text_muted']}" font-size="8.5" class="mono">{escape(sub)}</text>
+  <line x1="{x + 12:.1f}" y1="69" x2="{x + card_w - 12:.1f}" y2="69" stroke="{t['grid']}" stroke-width="1"/>
+  <text x="{x + 12:.1f}" y="93" fill="{t['text_primary']}" font-size="14.5" font-weight="800" class="mono">{escape(val_str)}</text>
+  <text x="{x + 12:.1f}" y="112" fill="{col}" font-size="10.5" font-weight="700" class="mono">{escape(pct_str)}</text>
   {spark}"""
 
-    # Card 4: $KHALID 7D Code Velocity
+    # Card 5: $KHALID 7D Code Velocity (x=765, width=135 -> ends at 900)
+    c5_x = 765.0
     last7 = [float(v) for v in (stats.get("last7_days") or [0] * 7)]
     sum7 = int(sum(last7))
     code_col = t["bull"] if sum7 > 0 else t["text_muted"]
-    code_spark = sparkline_svg(last7, 748.0, 128.0, 138.0, 28.0, t["accent"], "gradCode")
-    card4 = f"""  <rect x="734" y="42" width="166" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
-  <text x="748" y="61" fill="{t['text_primary']}" font-size="11.5" font-weight="800" class="mono">$KHALID</text>
-  <text x="886" y="61" text-anchor="end" fill="{t['text_muted']}" font-size="9" class="mono">7D PULSE</text>
-  <line x1="748" y1="69" x2="886" y2="69" stroke="{t['grid']}" stroke-width="1"/>
-  <text x="748" y="93" fill="{t['text_primary']}" font-size="16" font-weight="800" class="mono">+{sum7} CMTS</text>
-  <text x="748" y="112" fill="{code_col}" font-size="11" font-weight="700" class="mono">STREAK: {stats['current_streak']}D</text>
+    code_spark = sparkline_svg(last7, c5_x + 12.0, 128.0, spark_w, 28.0, t["accent"], "gradCode")
+    card5 = f"""  <rect x="{c5_x:.1f}" y="42" width="{card_w:.0f}" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="{c5_x + 12:.1f}" y="61" fill="{t['text_primary']}" font-size="11" font-weight="800" class="mono">$KHALID</text>
+  <text x="{c5_x + card_w - 12:.1f}" y="61" text-anchor="end" fill="{t['text_muted']}" font-size="8.5" class="mono">7D PULSE</text>
+  <line x1="{c5_x + 12:.1f}" y1="69" x2="{c5_x + card_w - 12:.1f}" y2="69" stroke="{t['grid']}" stroke-width="1"/>
+  <text x="{c5_x + 12:.1f}" y="93" fill="{t['text_primary']}" font-size="14.5" font-weight="800" class="mono">+{sum7} CMTS</text>
+  <text x="{c5_x + 12:.1f}" y="112" fill="{code_col}" font-size="10.5" font-weight="700" class="mono">STREAK: {stats['current_streak']}D</text>
   {code_spark}"""
 
-    c1 = fmt_ticker_card(200.0, "SPY", "S&P 500", spy, "$", 2, False, "gradSpy")
-    c2 = fmt_ticker_card(378.0, "^VIX", "VOLATILITY", vix, "", 2, True, "gradVix")
-    c3 = fmt_ticker_card(556.0, "BTC-USD", "BITCOIN", btc, "$", 0, False, "gradBtc")
+    c1 = fmt_ticker_card(181.0, "SPY", "ETF", spy, "$", 2, "gradSpy")
+    c2 = fmt_ticker_card(327.0, "SPX", "S&P 500", spx, "", 2, "gradSpx")
+    c3 = fmt_ticker_card(473.0, "GOLD", "XAU/OZ", gold, "$", 2, "gradGold")
+    c4 = fmt_ticker_card(619.0, "BTC", "CRYPTO", btc, "$", 0, "gradBtc")
 
-    # Radar center (103, 105), radius 48
+    # Radar panel: x=20..169 (width=149), center (94.5, 105), radius 44
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 184" width="920" height="184" role="img" aria-label="OSINT Macro Signal HUD">
   <style>
@@ -1076,9 +1078,13 @@ def render_osint_hud(stats: dict, macro: dict, theme_name: str) -> str:
       <stop offset="0%" stop-color="{t['bull']}" stop-opacity="0.25"/>
       <stop offset="100%" stop-color="{t['bull']}" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="gradVix" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="{t['bear']}" stop-opacity="0.22"/>
-      <stop offset="100%" stop-color="{t['bear']}" stop-opacity="0"/>
+    <linearGradient id="gradSpx" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="{t['vol_cyan']}" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="{t['vol_cyan']}" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gradGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="{t['warn']}" stop-opacity="0.26"/>
+      <stop offset="100%" stop-color="{t['warn']}" stop-opacity="0"/>
     </linearGradient>
     <linearGradient id="gradBtc" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="{t['vol_cyan']}" stop-opacity="0.25"/>
@@ -1097,39 +1103,40 @@ def render_osint_hud(stats: dict, macro: dict, theme_name: str) -> str:
     <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
   </circle>
   <text x="42" y="28" fill="{t['text_primary']}" font-size="11.5" font-weight="800" class="mono">OSINT // MACRO &amp; GEOPOLITICAL SIGNAL HUD</text>
-  <rect x="380" y="14" width="128" height="18" rx="4" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="0.8"/>
-  <text x="444" y="27" text-anchor="middle" fill="{regime_col}" font-size="9.5" font-weight="700" class="mono">{escape(regime)}</text>
-  <text x="900" y="28" text-anchor="end" fill="{t['text_muted']}" font-size="9.5" class="mono">FEEDS: SPY · ^VIX · BTC · GITHUB  //  {escape(stats['synced_at'])}</text>
+  <rect x="380" y="14" width="112" height="18" rx="4" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="0.8"/>
+  <text x="436" y="27" text-anchor="middle" fill="{regime_col}" font-size="9.5" font-weight="700" class="mono">{escape(regime)}</text>
+  <text x="900" y="28" text-anchor="end" fill="{t['text_muted']}" font-size="9.5" class="mono">FEEDS: SPY · SPX · GOLD · BTC · GITHUB  //  {escape(stats['synced_at'])}</text>
 
   <!-- Left Tactical Radar Panel -->
-  <rect x="20" y="42" width="166" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
-  <circle cx="103" cy="105" r="48" fill="none" stroke="{t['grid']}" stroke-width="1.2"/>
-  <circle cx="103" cy="105" r="32" fill="none" stroke="{t['grid']}" stroke-width="1" stroke-dasharray="2,3"/>
-  <circle cx="103" cy="105" r="16" fill="none" stroke="{t['grid']}" stroke-width="1"/>
-  <line x1="51" y1="105" x2="155" y2="105" stroke="{t['grid']}" stroke-width="0.9"/>
-  <line x1="103" y1="53" x2="103" y2="157" stroke="{t['grid']}" stroke-width="0.9"/>
+  <rect x="20" y="42" width="149" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <circle cx="94.5" cy="105" r="44" fill="none" stroke="{t['grid']}" stroke-width="1.2"/>
+  <circle cx="94.5" cy="105" r="29" fill="none" stroke="{t['grid']}" stroke-width="1" stroke-dasharray="2,3"/>
+  <circle cx="94.5" cy="105" r="14" fill="none" stroke="{t['grid']}" stroke-width="1"/>
+  <line x1="46.5" y1="105" x2="142.5" y2="105" stroke="{t['grid']}" stroke-width="0.9"/>
+  <line x1="94.5" y1="57" x2="94.5" y2="153" stroke="{t['grid']}" stroke-width="0.9"/>
 
   <g>
-    <animateTransform attributeName="transform" type="rotate" from="0 103 105" to="360 103 105" dur="5.5s" repeatCount="indefinite"/>
-    <path d="M 103 105 L 103 57 A 48 48 0 0 1 144.6 81 Z" fill="url(#radarBeam)"/>
-    <line x1="103" y1="105" x2="103" y2="57" stroke="{t['bull']}" stroke-width="1.5" stroke-opacity="0.85"/>
+    <animateTransform attributeName="transform" type="rotate" from="0 94.5 105" to="360 94.5 105" dur="5.5s" repeatCount="indefinite"/>
+    <path d="M 94.5 105 L 94.5 61 A 44 44 0 0 1 132.6 83 Z" fill="url(#radarBeam)"/>
+    <line x1="94.5" y1="105" x2="94.5" y2="61" stroke="{t['bull']}" stroke-width="1.5" stroke-opacity="0.85"/>
   </g>
 
-  <circle cx="126" cy="84" r="2.6" fill="{t['bull']}">
+  <circle cx="116" cy="86" r="2.5" fill="{t['bull']}">
     <animate attributeName="opacity" values="0.2;1;0.2" dur="2.7s" repeatCount="indefinite"/>
   </circle>
-  <circle cx="80" cy="120" r="2.3" fill="{t['accent']}">
+  <circle cx="74" cy="118" r="2.2" fill="{t['accent']}">
     <animate attributeName="opacity" values="0.2;1;0.2" dur="3.4s" repeatCount="indefinite"/>
   </circle>
-  <circle cx="130" cy="126" r="2.2" fill="{t['vol_cyan']}">
+  <circle cx="119" cy="124" r="2.1" fill="{t['vol_cyan']}">
     <animate attributeName="opacity" values="0.15;0.95;0.15" dur="4.1s" repeatCount="indefinite"/>
   </circle>
-  <circle cx="103" cy="105" r="2.8" fill="{t['bull']}"/>
+  <circle cx="94.5" cy="105" r="2.6" fill="{t['bull']}"/>
 
 {c1}
 {c2}
 {c3}
-{card4}
+{c4}
+{card5}
 </svg>
 """
 
@@ -1142,7 +1149,7 @@ def main() -> int:
         if not token and "--offline" not in sys.argv:
             print("No ACCESS_TOKEN or GITHUB_TOKEN found; generating baseline SVGs.", file=sys.stderr)
         stats = empty_initial_stats(username)
-        macro = {"spy": None, "vix": None, "btc": None}
+        macro = {"spy": None, "spx": None, "gold": None, "btc": None}
     else:
         stats = fetch_github_stats(username, token)
         macro = fetch_macro_signals()

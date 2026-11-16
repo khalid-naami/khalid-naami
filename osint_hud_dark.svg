@@ -37,9 +37,15 @@
     <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
   </circle>
   <text x="42" y="28" fill="#f0f6fc" font-size="11.5" font-weight="800" class="mono">OSINT // MACRO &amp; GEOPOLITICAL SIGNAL HUD</text>
+<<<<<<< HEAD
   <rect x="380" y="14" width="112" height="18" rx="4" fill="#161b22" stroke="#30363d" stroke-width="0.8"/>
   <text x="436" y="27" text-anchor="middle" fill="#7c6ef6" font-size="9.5" font-weight="700" class="mono">HUD: STANDBY</text>
   <text x="900" y="28" text-anchor="end" fill="#6e7681" font-size="9.5" class="mono">FEEDS: SPY · SPX · GOLD · BTC · GITHUB  //  AWAITING SYNC</text>
+=======
+  <rect x="380" y="14" width="128" height="18" rx="4" fill="#161b22" stroke="#30363d" stroke-width="0.8"/>
+  <text x="444" y="27" text-anchor="middle" fill="#7c6ef6" font-size="9.5" font-weight="700" class="mono">HUD: ACTIVE</text>
+  <text x="900" y="28" text-anchor="end" fill="#6e7681" font-size="9.5" class="mono">FEEDS: SPY · ^VIX · BTC · GITHUB  //  2026-11-16 22:15 UTC</text>
+>>>>>>> 2380e8dd1037fff0b584a8d13a7ec12c177f177b
 
   <!-- Left Tactical Radar Panel -->
   <rect x="20" y="42" width="149" height="126" rx="9" fill="#161b22" stroke="#30363d" stroke-width="1"/>
@@ -66,6 +72,7 @@
   </circle>
   <circle cx="94.5" cy="105" r="2.6" fill="#3fb950"/>
 
+<<<<<<< HEAD
   <rect x="181.0" y="42" width="135" height="126" rx="9" fill="#161b22" stroke="#30363d" stroke-width="1"/>
   <text x="193.0" y="61" fill="#f0f6fc" font-size="11" font-weight="800" class="mono">SPY</text>
   <text x="304.0" y="61" text-anchor="end" fill="#6e7681" font-size="8.5" class="mono">ETF</text>
@@ -101,4 +108,34 @@
   <text x="777.0" y="93" fill="#f0f6fc" font-size="14.5" font-weight="800" class="mono">+0 CMTS</text>
   <text x="777.0" y="112" fill="#6e7681" font-size="10.5" font-weight="700" class="mono">STREAK: 0D</text>
   <path d="M 777.0 154.0 C 780.1 154.0, 789.3 154.0, 795.5 154.0 C 801.7 154.0, 807.8 154.0, 814.0 154.0 C 820.2 154.0, 826.3 154.0, 832.5 154.0 C 838.7 154.0, 844.8 154.0, 851.0 154.0 C 857.2 154.0, 863.3 154.0, 869.5 154.0 C 875.7 154.0, 884.9 154.0, 888.0 154.0 L 888.0 156.0 L 777.0 156.0 Z" fill="url(#gradCode)"/><path d="M 777.0 154.0 C 780.1 154.0, 789.3 154.0, 795.5 154.0 C 801.7 154.0, 807.8 154.0, 814.0 154.0 C 820.2 154.0, 826.3 154.0, 832.5 154.0 C 838.7 154.0, 844.8 154.0, 851.0 154.0 C 857.2 154.0, 863.3 154.0, 869.5 154.0 C 875.7 154.0, 884.9 154.0, 888.0 154.0" fill="none" stroke="#7c6ef6" stroke-width="1.7" stroke-linecap="round"/><circle cx="888.0" cy="154.0" r="2.3" fill="#7c6ef6"/>
+=======
+  <rect x="200.0" y="42" width="166" height="126" rx="9" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="214.0" y="61" fill="#f0f6fc" font-size="11.5" font-weight="800" class="mono">SPY</text>
+  <text x="352.0" y="61" text-anchor="end" fill="#6e7681" font-size="9" class="mono">S&amp;P 500</text>
+  <line x1="214.0" y1="69" x2="352.0" y2="69" stroke="#21262d" stroke-width="1"/>
+  <text x="214.0" y="93" fill="#f0f6fc" font-size="16" font-weight="800" class="mono">--</text>
+  <text x="214.0" y="112" fill="#6e7681" font-size="11" font-weight="700" class="mono">AWAITING</text>
+  <line x1="214.0" y1="142.0" x2="352.0" y2="142.0" stroke="#6e7681" stroke-width="1.4" stroke-dasharray="3,3" stroke-opacity="0.6"/>
+  <rect x="378.0" y="42" width="166" height="126" rx="9" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="392.0" y="61" fill="#f0f6fc" font-size="11.5" font-weight="800" class="mono">^VIX</text>
+  <text x="530.0" y="61" text-anchor="end" fill="#6e7681" font-size="9" class="mono">VOLATILITY</text>
+  <line x1="392.0" y1="69" x2="530.0" y2="69" stroke="#21262d" stroke-width="1"/>
+  <text x="392.0" y="93" fill="#f0f6fc" font-size="16" font-weight="800" class="mono">--</text>
+  <text x="392.0" y="112" fill="#6e7681" font-size="11" font-weight="700" class="mono">AWAITING</text>
+  <line x1="392.0" y1="142.0" x2="530.0" y2="142.0" stroke="#6e7681" stroke-width="1.4" stroke-dasharray="3,3" stroke-opacity="0.6"/>
+  <rect x="556.0" y="42" width="166" height="126" rx="9" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="570.0" y="61" fill="#f0f6fc" font-size="11.5" font-weight="800" class="mono">BTC-USD</text>
+  <text x="708.0" y="61" text-anchor="end" fill="#6e7681" font-size="9" class="mono">BITCOIN</text>
+  <line x1="570.0" y1="69" x2="708.0" y2="69" stroke="#21262d" stroke-width="1"/>
+  <text x="570.0" y="93" fill="#f0f6fc" font-size="16" font-weight="800" class="mono">$65,438</text>
+  <text x="570.0" y="112" fill="#3fb950" font-size="11" font-weight="700" class="mono">+0.44%</text>
+  <line x1="570.0" y1="142.0" x2="708.0" y2="142.0" stroke="#3fb950" stroke-width="1.4" stroke-dasharray="3,3" stroke-opacity="0.6"/>
+  <rect x="734" y="42" width="166" height="126" rx="9" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="748" y="61" fill="#f0f6fc" font-size="11.5" font-weight="800" class="mono">$KHALID</text>
+  <text x="886" y="61" text-anchor="end" fill="#6e7681" font-size="9" class="mono">7D PULSE</text>
+  <line x1="748" y1="69" x2="886" y2="69" stroke="#21262d" stroke-width="1"/>
+  <text x="748" y="93" fill="#f0f6fc" font-size="16" font-weight="800" class="mono">+688 CMTS</text>
+  <text x="748" y="112" fill="#3fb950" font-size="11" font-weight="700" class="mono">STREAK: 2D</text>
+  <path d="M 748.0 150.0 C 751.8 149.5, 763.3 147.9, 771.0 147.4 C 778.7 146.8, 786.3 149.5, 794.0 146.6 C 801.7 143.7, 809.3 128.8, 817.0 130.0 C 824.7 131.2, 832.3 151.7, 840.0 154.0 C 847.7 156.3, 855.3 145.0, 863.0 144.0 C 870.7 143.1, 882.2 147.6, 886.0 148.3 L 886.0 156.0 L 748.0 156.0 Z" fill="url(#gradCode)"/><path d="M 748.0 150.0 C 751.8 149.5, 763.3 147.9, 771.0 147.4 C 778.7 146.8, 786.3 149.5, 794.0 146.6 C 801.7 143.7, 809.3 128.8, 817.0 130.0 C 824.7 131.2, 832.3 151.7, 840.0 154.0 C 847.7 156.3, 855.3 145.0, 863.0 144.0 C 870.7 143.1, 882.2 147.6, 886.0 148.3" fill="none" stroke="#7c6ef6" stroke-width="1.7" stroke-linecap="round"/><circle cx="886.0" cy="148.3" r="2.3" fill="#7c6ef6"/>
+>>>>>>> 2380e8dd1037fff0b584a8d13a7ec12c177f177b
 </svg>

@@ -859,30 +859,41 @@ def render_quant_svg(stats: dict, theme_name: str) -> str:
 
 
 def render_vol_surface_banner(theme_name: str) -> str:
-    """Feature #2: Renders an animated 3D Isometric Volatility Surface + GEX Pulse SVG (920x132)."""
+    """Feature #2: Renders an animated 3D Isometric Volatility Surface + GEX Pulse SVG (920x210)."""
     t = THEMES[theme_name]
-    cols = 18
-    rows = 9
+    cols = 22
+    rows = 11
 
     def surface_pt(i: int, j: int) -> tuple[float, float]:
         u = i / (cols - 1)  # Strike Moneyness K/S
         v = j / (rows - 1)  # Time to Expiry T
-        skew = ((u - 0.52) ** 2) / (0.32 + 0.68 * v)
-        gamma_wall = math.exp(-(((u - 0.50) ** 2) + ((v - 0.36) ** 2)) / 0.085)
-        z = 0.16 + 0.52 * skew + 0.44 * gamma_wall
-        px = 258.0 + u * 458.0 + v * 164.0
-        py = 112.0 - v * 34.0 - z * 56.0
+        skew = ((u - 0.52) ** 2) / (0.28 + 0.72 * v)
+        gamma_wall = math.exp(-(((u - 0.50) ** 2) + ((v - 0.38) ** 2)) / 0.085)
+        z = 0.14 + 0.54 * skew + 0.48 * gamma_wall
+        px = 266.0 + u * 450.0 + v * 164.0
+        py = 192.0 - v * 90.0 - z * 185.0
         return (px, py)
 
     grid_2d = [[surface_pt(i, j) for i in range(cols)] for j in range(rows)]
     mesh_parts = []
+
+    # 3D isometric floor reference axes
+    fl_00 = (266.0, 192.0)
+    fl_10 = (266.0 + 450.0, 192.0)
+    fl_11 = (266.0 + 450.0 + 164.0, 192.0 - 90.0)
+    fl_01 = (266.0 + 164.0, 192.0 - 90.0)
+    mesh_parts.append(
+        f'<polygon points="{fl_00[0]:.1f},{fl_00[1]:.1f} {fl_10[0]:.1f},{fl_10[1]:.1f} '
+        f'{fl_11[0]:.1f},{fl_11[1]:.1f} {fl_01[0]:.1f},{fl_01[1]:.1f}" '
+        f'fill="{t["bg_panel"]}" fill-opacity="0.45" stroke="{t["grid"]}" stroke-width="1" stroke-dasharray="3,4"/>'
+    )
 
     # Longitudinal ribs (constant strike lines)
     for i in range(0, cols, 2):
         pts = [grid_2d[j][i] for j in range(rows)]
         d = smooth_svg_path(pts)
         mesh_parts.append(
-            f'<path d="{d}" fill="none" stroke="{t["accent"]}" stroke-width="0.9" stroke-opacity="0.22"/>'
+            f'<path d="{d}" fill="none" stroke="{t["accent"]}" stroke-width="1.0" stroke-opacity="0.26"/>'
         )
 
     # Transverse expiry smile curves with subtle breathing animation
@@ -891,63 +902,71 @@ def render_vol_surface_banner(theme_name: str) -> str:
         d = smooth_svg_path(grid_2d[j])
         if j == rows - 1:
             stroke = t["bull"]
-            op = 0.92
-            sw = 2.0
+            op = 0.94
+            sw = 2.2
         elif j >= rows // 2:
             stroke = t["ma_line"]
-            op = 0.45 + depth * 0.40
-            sw = 1.4
+            op = 0.48 + depth * 0.40
+            sw = 1.55
         else:
             stroke = t["vol_cyan"]
-            op = 0.28 + depth * 0.35
-            sw = 1.15
+            op = 0.30 + depth * 0.36
+            sw = 1.25
         dur = 3.6 + (j % 3) * 1.1
         mesh_parts.append(
             f'<path d="{d}" fill="none" stroke="{stroke}" stroke-width="{sw:.2f}" stroke-opacity="{op:.2f}">'
-            f'<animate attributeName="stroke-opacity" values="{op:.2f};{max(0.14, op * 0.48):.2f};{op:.2f}" '
+            f'<animate attributeName="stroke-opacity" values="{op:.2f};{max(0.16, op * 0.48):.2f};{op:.2f}" '
             f'dur="{dur:.1f}s" repeatCount="indefinite"/>'
             f'</path>'
         )
 
     # Pulsing GEX gamma nodes along the peak ridge
+    mid_col = cols // 2
     nodes = [
-        (grid_2d[3][9], t["vol_cyan"], "2.4s"),
-        (grid_2d[5][9], t["ma_line"], "2.9s"),
-        (grid_2d[8][9], t["bull"], "2.1s"),
+        (grid_2d[2][mid_col], t["vol_cyan"], "2.4s"),
+        (grid_2d[5][mid_col], t["ma_line"], "2.9s"),
+        (grid_2d[8][mid_col], t["ma_line"], "2.6s"),
+        (grid_2d[rows - 1][mid_col], t["bull"], "2.1s"),
     ]
     node_parts = []
     for (nx, ny), ncol, ndur in nodes:
         node_parts.append(
-            f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="5" fill="{ncol}" fill-opacity="0.28">'
-            f'<animate attributeName="r" values="3.5;8;3.5" dur="{ndur}" repeatCount="indefinite"/>'
-            f'<animate attributeName="fill-opacity" values="0.45;0.08;0.45" dur="{ndur}" repeatCount="indefinite"/>'
+            f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="5.5" fill="{ncol}" fill-opacity="0.28">'
+            f'<animate attributeName="r" values="3.8;9;3.8" dur="{ndur}" repeatCount="indefinite"/>'
+            f'<animate attributeName="fill-opacity" values="0.48;0.08;0.48" dur="{ndur}" repeatCount="indefinite"/>'
             f'</circle>'
-            f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="2.3" fill="{ncol}"/>'
+            f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="2.6" fill="{ncol}"/>'
         )
 
     return f"""<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 132" width="920" height="132" role="img" aria-label="Animated 3D Volatility Surface and GEX Pulse">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 210" width="920" height="210" role="img" aria-label="Animated 3D Volatility Surface and GEX Pulse">
   <style>
     .mono {{ font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace; }}
   </style>
-  <rect x="0.5" y="0.5" width="919" height="131" rx="12" fill="{t['bg_outer']}" stroke="{t['border']}" stroke-width="1"/>
-  <rect x="14" y="14" width="222" height="104" rx="8" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <rect x="0.5" y="0.5" width="919" height="209" rx="14" fill="{t['bg_outer']}" stroke="{t['border']}" stroke-width="1"/>
+  <rect x="16" y="16" width="228" height="178" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
 
-  <rect x="26" y="25" width="136" height="18" rx="4" fill="{t['accent_pill_bg']}" stroke="{t['accent']}" stroke-width="0.6" stroke-opacity="0.5"/>
-  <text x="94" y="38" text-anchor="middle" fill="{t['accent_pill_text']}" font-size="9.5" font-weight="700" class="mono">3D VOL SURFACE · GEX</text>
+  <rect x="30" y="30" width="144" height="20" rx="5" fill="{t['accent_pill_bg']}" stroke="{t['accent']}" stroke-width="0.7" stroke-opacity="0.5"/>
+  <text x="102" y="44" text-anchor="middle" fill="{t['accent_pill_text']}" font-size="10" font-weight="700" class="mono">3D VOL SURFACE · GEX</text>
 
-  <text x="26" y="61" fill="{t['text_primary']}" font-size="12" font-weight="700" class="mono">IV(K, T) TOPOGRAPHY</text>
-  <text x="26" y="79" fill="{t['text_secondary']}" font-size="10" class="mono">σ = σ₀ + α·skew² + β·Γ(T)</text>
+  <text x="30" y="74" fill="{t['text_primary']}" font-size="13" font-weight="800" class="mono">IV(K, T) TOPOGRAPHY</text>
+  <text x="30" y="95" fill="{t['text_secondary']}" font-size="10.5" class="mono">σ = σ₀ + α·skew² + β·Γ(T)</text>
 
-  <circle cx="32" cy="100" r="3.5" fill="{t['bull']}">
+  <line x1="30" y1="112" x2="230" y2="112" stroke="{t['grid']}" stroke-width="1"/>
+  <text x="30" y="131" fill="{t['text_muted']}" font-size="9.5" class="mono">AXES: STRIKE (K/S) × EXPIRY</text>
+  <text x="30" y="149" fill="{t['text_muted']}" font-size="9.5" class="mono">MODEL: SKEW + GAMMA WALL</text>
+
+  <circle cx="36" cy="173" r="4" fill="{t['bull']}">
     <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
   </circle>
-  <text x="42" y="103" fill="{t['bull']}" font-size="9.5" font-weight="700" class="mono">GAMMA PULSE ACTIVE</text>
+  <text x="48" y="177" fill="{t['bull']}" font-size="10" font-weight="700" class="mono">GAMMA PULSE ACTIVE</text>
 
   <g>
     {chr(10) + "    ".join(mesh_parts)}
     {chr(10) + "    ".join(node_parts)}
   </g>
+  <text x="490" y="203" text-anchor="middle" fill="{t['text_muted']}" font-size="9.5" class="mono">STRIKE MONEYNESS (K/S)</text>
+  <text x="888" y="156" text-anchor="end" fill="{t['text_muted']}" font-size="9.5" class="mono">EXPIRY (T)</text>
 </svg>
 """
 

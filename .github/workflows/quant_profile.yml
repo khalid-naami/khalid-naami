@@ -7,13 +7,15 @@ on:
       - main
     paths:
       - README.md
+      - .github/scripts/sync_blog.py
       - .github/scripts/quant_stats.py
       - .github/workflows/quant_profile.yml
   schedule:
-    - cron: "0 4 * * *"
+    - cron: "0 */6 * * *"
 
 jobs:
   build:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,16 +30,19 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Generate Quant Terminal SVGs
+      - name: Sync Latest Blog Posts
+        run: python .github/scripts/sync_blog.py
+
+      - name: Generate Quant Terminal, 3D Vol Surface & OSINT HUD SVGs
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USER_NAME: ${{ github.repository_owner }}
         run: python .github/scripts/quant_stats.py
 
-      - name: Commit updated SVGs
+      - name: Commit updated README and SVGs
         run: |-
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-          git add quant_dark.svg quant_light.svg
-          git diff --cached --quiet || (git commit -m "Update Quant Terminal SVGs" && git push)
+          git add README.md quant_dark.svg quant_light.svg vol_surface_dark.svg vol_surface_light.svg osint_hud_dark.svg osint_hud_light.svg
+          git diff --cached --quiet || (git commit -m "Update Quant Terminal, OSINT HUD & Blog Posts" && git push)

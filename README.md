@@ -64,35 +64,35 @@
   </tr>
   <tr>
     <td>
-      <a href="https://khalidnaami.com/blog/dashboard-options-finance-quantitative-edge">
-        🚀 Dashboard Options for Finance: The Quantitative Edge
+      <a href="https://khalidnaami.com/blog/abqaiq-refinery-drone-strike-jizan-shutdown">
+        🤖 Abqaiq Refinery Strike: Jizan Shutdown
       </a>
     </td>
-    <td>Jun 4, 2026</td>
+    <td>Jul 31, 2026</td>
   </tr>
   <tr>
     <td>
-      <a href="https://khalidnaami.com/blog/my-trading-principles-wall-street-casino-my-story">
-        🎰 My Trading Principles: Wall Street Casino — My Story
+      <a href="https://khalidnaami.com/blog/abu-dhabi-secrets-leak-uae-covert-military-support-israel-yemen-eritrea">
+        🌍 UAE Covert Support for Israel: Leaked Secrets
       </a>
     </td>
-    <td>Jun 4, 2026</td>
+    <td>Jul 31, 2026</td>
   </tr>
   <tr>
     <td>
-      <a href="https://khalidnaami.com/blog/market-dynamics-efficiency-momentum-mean-reversion">
-        📈 Market Dynamics: Efficiency, Momentum & Mean Reversion
+      <a href="https://khalidnaami.com/blog/al-biyadah-clashes-death-captain-maoz-israel-recanati-golani">
+        🤖 Biyadah Battle: Captain Recanati Killed
       </a>
     </td>
-    <td>May 13, 2026</td>
+    <td>Jul 31, 2026</td>
   </tr>
   <tr>
     <td>
-      <a href="https://khalidnaami.com/blog/guide-to-reading-daily-analysis">
-        🧭 A Strategic Guide to Reading My Daily Analysis
+      <a href="https://khalidnaami.com/blog/alexander-dugin-clash-of-civilizations-russia-iran-china-axis">
+        📄 The Clash of Civilizations: Dugin&#x27;s Stance
       </a>
     </td>
-    <td>May 13, 2026</td>
+    <td>Jul 31, 2026</td>
   </tr>
 </table>
 <!-- BLOG-POST-LIST:END -->

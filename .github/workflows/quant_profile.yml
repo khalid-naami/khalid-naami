@@ -13,6 +13,10 @@ on:
   schedule:
     - cron: "0 */6 * * *"
 
+concurrency:
+  group: quant-profile-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     if: github.actor != 'github-actions[bot]'
@@ -48,4 +52,8 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git add README.md quant_dark.svg quant_light.svg vol_surface_dark.svg vol_surface_light.svg osint_hud_dark.svg osint_hud_light.svg
-          git diff --cached --quiet || (git commit -m "Update Quant Terminal, OSINT HUD & Blog Posts" && git push)
+          if ! git diff --cached --quiet; then
+            git commit -m "Update Quant Terminal, OSINT HUD & Blog Posts"
+            git pull --rebase -X theirs origin main
+            git push
+          fi

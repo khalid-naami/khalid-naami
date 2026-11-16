@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 """
-Generates custom dark/light Quantitative Terminal SVGs ($KHALID) for GitHub Profile README.
-Uses GitHub GraphQL API (via ACCESS_TOKEN or built-in GITHUB_TOKEN) and zero external packages.
+Generates custom dark/light SVGs for Khalid Naami's GitHub Profile README:
+  1. quant_dark.svg / quant_light.svg       ($KHALID Quant Terminal: OHLC Candles, Portfolio Telemetry, Ticker Tape)
+  2. vol_surface_dark.svg / vol_surface_light.svg (Animated 3D Isometric Volatility Surface + GEX Pulse)
+  3. osint_hud_dark.svg / osint_hud_light.svg   (Live OSINT / Macro Signal Radar HUD: SPY, ^VIX, BTC-USD, Code Pulse)
+
+Uses Python standard library only.
 """
 
 from __future__ import annotations
 
+import csv
 import datetime
 import html
+import io
 import json
 import math
 import os
 import re
 import sys
+import urllib.parse
 import urllib.request
 from xml.sax.saxutils import escape
 
@@ -55,6 +62,7 @@ THEMES = {
         "bull_soft": "#238636",
         "bear": "#f85149",
         "bear_soft": "#da3633",
+        "warn": "#d29922",
         "ma_line": "#a371f7",
         "vol_cyan": "#58a6ff",
         "ticker_bg": "#0b0f14",
@@ -74,11 +82,24 @@ THEMES = {
         "bull_soft": "#2da44e",
         "bear": "#cf222e",
         "bear_soft": "#e5534b",
+        "warn": "#9a6700",
         "ma_line": "#6A5ACD",
         "vol_cyan": "#0969da",
         "ticker_bg": "#f0f3f6",
     },
 }
+
+
+def http_get_text(url: str, timeout: int = 15) -> str:
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36",
+            "Accept": "application/json,text/csv,*/*",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
 
 
 def graphql_request(query: str, variables: dict, token: str) -> dict:
@@ -119,7 +140,6 @@ def extract_blog_titles(readme_path: str = "README.md", limit: int = 4) -> list[
     titles = []
     for raw in matches:
         clean = " ".join(html.unescape(raw).split())
-        # Remove leading emoji symbols while preserving ASCII title words
         clean = re.sub(r"^[^A-Za-z0-9$]+", "", clean).strip()
         if clean:
             titles.append(clean)
@@ -264,6 +284,8 @@ def fetch_github_stats(username: str, token: str) -> dict:
         else:
             break
 
+    last7_days = [int(d["contributionCount"]) for d in days_flat[-7:]]
+
     total_bytes = sum(lang_totals.values())
     sorted_langs = sorted(lang_totals.items(), key=lambda kv: kv[1], reverse=True)
     top_langs = []
@@ -300,10 +322,81 @@ def fetch_github_stats(username: str, token: str) -> dict:
         "current_streak": current_streak,
         "longest_streak": longest_streak,
         "weeks": weeks,
+        "last7_days": last7_days,
         "languages": top_langs,
         "recent_projects": recent_projects,
         "blog_titles": extract_blog_titles(),
     }
+
+
+def fetch_yahoo_ticker(symbol: str) -> dict | None:
+    """Fetches latest price, 1d % change, and 10d closes from Yahoo Finance chart API."""
+    encoded = urllib.parse.quote(symbol, safe="")
+    for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+        url = f"https://{host}/v8/finance/chart/{encoded}?range=1mo&interval=1d"
+        try:
+            payload = json.loads(http_get_text(url, timeout=12))
+            res = payload["chart"]["result"][0]
+            meta = res["meta"]
+            raw_closes = res["indicators"]["quote"][0].get("close") or []
+            closes = [float(x) for x in raw_closes if x is not None][-10:]
+            price = meta.get("regularMarketPrice")
+            if price is None and closes:
+                price = closes[-1]
+            if price is None:
+                continue
+            price = float(price)
+            prev = meta.get("chartPreviousClose") or meta.get("previousClose")
+            if len(closes) >= 2:
+                prev = closes[-2]
+            pct = ((price - float(prev)) / float(prev)) * 100.0 if prev else 0.0
+            return {"price": price, "pct": pct, "history": closes}
+        except Exception:
+            continue
+    return None
+
+
+def fetch_stooq_spy() -> dict | None:
+    """Fallback daily closes for SPY from Stooq CSV."""
+    try:
+        raw = http_get_text("https://stooq.com/q/d/l/?s=spy.us&i=d", timeout=12)
+        rows = list(csv.DictReader(io.StringIO(raw)))
+        closes = [float(r["Close"]) for r in rows if r.get("Close")][-10:]
+        if not closes:
+            return None
+        price = closes[-1]
+        pct = ((price - closes[-2]) / closes[-2]) * 100.0 if len(closes) >= 2 and closes[-2] else 0.0
+        return {"price": price, "pct": pct, "history": closes}
+    except Exception:
+        return None
+
+
+def fetch_btc_fallback() -> dict | None:
+    """Fallback for BTC-USD via CoinGecko / Coinbase."""
+    try:
+        data = json.loads(
+            http_get_text(
+                "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true",
+                timeout=12,
+            )
+        )
+        btc = data["bitcoin"]
+        return {"price": float(btc["usd"]), "pct": float(btc.get("usd_24h_change", 0.0)), "history": []}
+    except Exception:
+        pass
+    try:
+        data = json.loads(http_get_text("https://api.coinbase.com/v2/prices/BTC-USD/spot", timeout=10))
+        return {"price": float(data["data"]["amount"]), "pct": 0.0, "history": []}
+    except Exception:
+        return None
+
+
+def fetch_macro_signals() -> dict:
+    """Fetches SPY, ^VIX, and BTC-USD from free public market endpoints."""
+    spy = fetch_yahoo_ticker("SPY") or fetch_stooq_spy()
+    vix = fetch_yahoo_ticker("^VIX")
+    btc = fetch_yahoo_ticker("BTC-USD") or fetch_btc_fallback()
+    return {"spy": spy, "vix": vix, "btc": btc}
 
 
 def empty_initial_stats(username: str) -> dict:
@@ -321,6 +414,7 @@ def empty_initial_stats(username: str) -> dict:
         "current_streak": 0,
         "longest_streak": 0,
         "weeks": [[0] * 7 for _ in range(20)],
+        "last7_days": [0] * 7,
         "languages": [],
         "recent_projects": [],
         "blog_titles": extract_blog_titles(),
@@ -341,7 +435,7 @@ def ema_series(values: list[float], period: int = 5) -> list[float]:
 def build_ohlc_candles(weeks: list[list[int]], count: int = 20) -> tuple[list[dict], list[float]]:
     """
     Converts weekly contribution lists into OHLC candles for the last `count` weeks
-    and aligns them with the 5-week EMA. Periods with commits >= EMA (and > 0) are bullish green;
+    aligned with the 5-week EMA. Periods with commits >= EMA (and > 0) are bullish green;
     quiet or below-average periods are bearish red.
     """
     if not weeks:
@@ -395,7 +489,7 @@ def smooth_svg_path(points: list[tuple[float, float]]) -> str:
     return " ".join(parts)
 
 
-def render_vol_surface(x0: float, y0: float, width: float, height: float, t: dict) -> str:
+def render_vol_surface_curves(x0: float, y0: float, width: float, height: float, t: dict) -> str:
     """Renders 5 layered 3D-perspective volatility smile / gamma curves strictly inside bounds."""
     layers = []
     num_slices = 5
@@ -436,8 +530,8 @@ def format_num(val: int) -> str:
     return f"{val:,}"
 
 
-def render_svg(stats: dict, theme_name: str) -> str:
-    """Renders the complete 920x440 Quant Terminal SVG for dark or light mode."""
+def render_quant_svg(stats: dict, theme_name: str) -> str:
+    """Feature #1: Renders the 920x440 $KHALID Quant Terminal SVG for dark or light mode."""
     t = THEMES[theme_name]
     candles, ema_vals = build_ohlc_candles(stats["weeks"], 20)
     closes = [c["close"] for c in candles]
@@ -466,7 +560,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
 
     delta_fg = t["bull"] if delta_up else t["bear"]
 
-    # Chart geometry (Left Panel: x=20..570, y=72..302)
     plot_x = 38.0
     plot_y = 104.0
     plot_w = 482.0
@@ -485,7 +578,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
         norm = math.log1p(val) / log_max
         return max(plot_y, min(plot_bot, plot_bot - norm * plot_h))
 
-    # Grid lines + accurate log-scale Y-axis labels
     grid_parts = []
     for step in range(4):
         frac = step / 3.0
@@ -500,7 +592,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
             f'font-size="10" class="mono">{gval}</text>'
         )
 
-    # Volume sub-pane divider and label
     grid_parts.append(
         f'<line x1="{plot_x:.1f}" y1="264.0" x2="{plot_x + plot_w:.1f}" y2="264.0" '
         f'stroke="{t["grid"]}" stroke-width="1"/>'
@@ -528,7 +619,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
             col_soft = t["bull_soft"] if c["bull"] else t["bear_soft"]
 
             if c["zero"]:
-                # Quiet zero-activity week: crisp minimal red bar sitting cleanly on baseline
                 candle_parts.append(
                     f'<rect x="{cx - body_w / 2:.1f}" y="{plot_bot - 2.5:.1f}" width="{body_w:.1f}" '
                     f'height="2.5" rx="1" fill="{t["bear"]}" fill-opacity="0.45"/>'
@@ -544,7 +634,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
                 if top_b + bh > plot_bot:
                     top_b = plot_bot - bh
 
-                # Volume bar using log compression so smaller active days remain visible
                 if c["volume"] > 0:
                     vh = max(3.0, (math.log1p(c["volume"]) / math.log1p(max_vol)) * vol_max_h)
                 else:
@@ -553,12 +642,10 @@ def render_svg(stats: dict, theme_name: str) -> str:
                     f'<rect x="{cx - body_w / 2:.1f}" y="{vol_base_y - vh:.1f}" width="{body_w:.1f}" '
                     f'height="{vh:.1f}" rx="1.5" fill="{col}" fill-opacity="0.30"/>'
                 )
-                # Wick
                 candle_parts.append(
                     f'<line x1="{cx:.1f}" y1="{yh:.1f}" x2="{cx:.1f}" y2="{yl:.1f}" '
                     f'stroke="{col}" stroke-width="1.6" stroke-linecap="round"/>'
                 )
-                # Body
                 candle_parts.append(
                     f'<rect x="{cx - body_w / 2:.1f}" y="{top_b:.1f}" width="{body_w:.1f}" '
                     f'height="{bh:.1f}" rx="2" fill="{col}" stroke="{col_soft}" stroke-width="0.6"/>'
@@ -593,7 +680,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
             f'PUSH TO SYNC LIVE GITHUB CANDLES</text>'
         )
 
-    # Portfolio Allocation Bar + Legend (Right Bottom Panel: x=584..900, y=194..302)
     langs = stats["languages"]
     bar_x = 600.0
     bar_y = 228.0
@@ -633,10 +719,8 @@ def render_svg(stats: dict, theme_name: str) -> str:
             f'AWAITING REPO ALLOCATION SYNC</text>'
         )
 
-    # Volatility surface curves strictly right of x=418 divider and inside y=314..382
-    vol_curves = render_vol_surface(434.0, 322.0, 452.0, 56.0, t)
+    vol_curves = render_vol_surface_curves(434.0, 322.0, 452.0, 56.0, t)
 
-    # Bloomberg Ticker Tape: stats + stack + recent public projects + latest blog titles
     top_stack = " / ".join(f"{l['name'].upper()} {l['pct']:.0f}%" for l in langs[:3]) if langs else "PYTHON / JS / RUST"
     projects = stats.get("recent_projects") or []
     if projects:
@@ -662,11 +746,10 @@ def render_svg(stats: dict, theme_name: str) -> str:
         f"STATUS: {status_tag}   •   "
     )
     ticker_escaped = escape(ticker_msg)
-    # Generous width per char (~7.0px at 11px monospace) + padding prevents any wrap/overlap on fallback fonts
     ticker_px = max(900, int(round(len(ticker_msg) * 7.0 + 48)))
     ticker_dur = max(24, int(round(ticker_px / 48.0)))
 
-    svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 440" width="920" height="440" role="img" aria-label="Khalid Naami Quantitative GitHub Terminal">
   <style>
     .mono {{ font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace; }}
@@ -685,10 +768,8 @@ def render_svg(stats: dict, theme_name: str) -> str:
     </clipPath>
   </defs>
 
-  <!-- Outer Card -->
   <rect x="0.5" y="0.5" width="919" height="439" rx="14" fill="{t['bg_outer']}" stroke="{t['border']}" stroke-width="1"/>
 
-  <!-- Header Bar -->
   <circle cx="30" cy="30" r="7" fill="{t['bull']}" fill-opacity="0.24">
     <animate attributeName="r" values="4;9;4" dur="2.4s" repeatCount="indefinite"/>
     <animate attributeName="fill-opacity" values="0.40;0.10;0.40" dur="2.4s" repeatCount="indefinite"/>
@@ -699,7 +780,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
   <text x="204" y="33" text-anchor="middle" fill="{t['accent_pill_text']}" font-size="10" font-weight="700" class="mono">QUANT · AI · OSINT</text>
   <text x="46" y="54" fill="{t['text_secondary']}" font-size="10.5" class="mono">KHALID NAAMI  //  EXECUTION &amp; VOLATILITY TELEMETRY</text>
 
-  <!-- Right Header Index -->
   <text x="720" y="25" text-anchor="end" fill="{t['text_muted']}" font-size="9.5" font-weight="600" class="mono">SIGNAL INDEX</text>
   <text x="720" y="47" text-anchor="end" fill="{t['text_primary']}" font-size="19" font-weight="800" class="mono">{format_num(signal_index)}</text>
 
@@ -707,7 +787,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
   <text x="817" y="32" text-anchor="middle" fill="{delta_fg}" font-size="11.5" font-weight="700" class="mono">{escape(delta_str)}</text>
   <text x="817" y="48" text-anchor="middle" fill="{t['text_muted']}" font-size="9.5" class="mono">SYNC: {escape(stats['synced_at'])}</text>
 
-  <!-- Left Main Panel: 20W OHLC Candlestick Chart -->
   <rect x="20" y="72" width="550" height="230" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
   <text x="36" y="93" fill="{t['text_primary']}" font-size="11.5" font-weight="700" class="mono">20W COMMIT VELOCITY · OHLC (LOG)</text>
   <circle cx="430" cy="89" r="3.5" fill="{t['bull']}"/>
@@ -723,7 +802,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
     {chr(10) + "    ".join(candle_parts)}
   </g>
 
-  <!-- Right Top Panel: Portfolio Telemetry KPIs -->
   <rect x="584" y="72" width="316" height="110" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
   <text x="600" y="92" fill="{t['text_secondary']}" font-size="10.5" font-weight="700" class="mono">PORTFOLIO TELEMETRY</text>
   <line x1="600" y1="100" x2="884" y2="100" stroke="{t['grid']}" stroke-width="1"/>
@@ -740,7 +818,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
   <text x="748" y="156" fill="{t['text_muted']}" font-size="9.5" class="mono">FOLLOWERS</text>
   <text x="748" y="174" fill="{t['text_primary']}" font-size="17" font-weight="700" class="mono">{format_num(stats['followers'])}</text>
 
-  <!-- Right Bottom Panel: Portfolio Allocation -->
   <rect x="584" y="194" width="316" height="108" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
   <text x="600" y="215" fill="{t['text_secondary']}" font-size="10.5" font-weight="700" class="mono">PORTFOLIO ALLOCATION</text>
   <g clip-path="url(#allocClip)">
@@ -748,7 +825,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
   </g>
   {chr(10) + "  ".join(lang_legend_parts)}
 
-  <!-- Bottom Strip: GEX / 3D Volatility Surface & Streak Telemetry -->
   <rect x="20" y="314" width="880" height="68" rx="10" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
   <text x="36" y="333" fill="{t['text_secondary']}" font-size="10" font-weight="700" class="mono">GEX // VOLATILITY SURFACE &amp; STREAK</text>
 
@@ -767,7 +843,6 @@ def render_svg(stats: dict, theme_name: str) -> str:
   <line x1="418" y1="326" x2="418" y2="372" stroke="{t['grid']}" stroke-width="1"/>
   {vol_curves}
 
-  <!-- Bottom Scrolling Bloomberg Ticker Tape -->
   <rect x="20" y="394" width="880" height="32" rx="8" fill="{t['ticker_bg']}" stroke="{t['border']}" stroke-width="1"/>
   <rect x="26" y="399" width="82" height="22" rx="5" fill="{t['accent_pill_bg']}"/>
   <text x="67" y="414" text-anchor="middle" fill="{t['accent_pill_text']}" font-size="10" font-weight="700" class="mono">LIVE TAPE</text>
@@ -781,7 +856,263 @@ def render_svg(stats: dict, theme_name: str) -> str:
   </g>
 </svg>
 """
-    return svg
+
+
+def render_vol_surface_banner(theme_name: str) -> str:
+    """Feature #2: Renders an animated 3D Isometric Volatility Surface + GEX Pulse SVG (920x132)."""
+    t = THEMES[theme_name]
+    cols = 18
+    rows = 9
+
+    def surface_pt(i: int, j: int) -> tuple[float, float]:
+        u = i / (cols - 1)  # Strike Moneyness K/S
+        v = j / (rows - 1)  # Time to Expiry T
+        skew = ((u - 0.52) ** 2) / (0.32 + 0.68 * v)
+        gamma_wall = math.exp(-(((u - 0.50) ** 2) + ((v - 0.36) ** 2)) / 0.085)
+        z = 0.16 + 0.52 * skew + 0.44 * gamma_wall
+        px = 258.0 + u * 458.0 + v * 164.0
+        py = 112.0 - v * 34.0 - z * 56.0
+        return (px, py)
+
+    grid_2d = [[surface_pt(i, j) for i in range(cols)] for j in range(rows)]
+    mesh_parts = []
+
+    # Longitudinal ribs (constant strike lines)
+    for i in range(0, cols, 2):
+        pts = [grid_2d[j][i] for j in range(rows)]
+        d = smooth_svg_path(pts)
+        mesh_parts.append(
+            f'<path d="{d}" fill="none" stroke="{t["accent"]}" stroke-width="0.9" stroke-opacity="0.22"/>'
+        )
+
+    # Transverse expiry smile curves with subtle breathing animation
+    for j in range(rows):
+        depth = j / (rows - 1)
+        d = smooth_svg_path(grid_2d[j])
+        if j == rows - 1:
+            stroke = t["bull"]
+            op = 0.92
+            sw = 2.0
+        elif j >= rows // 2:
+            stroke = t["ma_line"]
+            op = 0.45 + depth * 0.40
+            sw = 1.4
+        else:
+            stroke = t["vol_cyan"]
+            op = 0.28 + depth * 0.35
+            sw = 1.15
+        dur = 3.6 + (j % 3) * 1.1
+        mesh_parts.append(
+            f'<path d="{d}" fill="none" stroke="{stroke}" stroke-width="{sw:.2f}" stroke-opacity="{op:.2f}">'
+            f'<animate attributeName="stroke-opacity" values="{op:.2f};{max(0.14, op * 0.48):.2f};{op:.2f}" '
+            f'dur="{dur:.1f}s" repeatCount="indefinite"/>'
+            f'</path>'
+        )
+
+    # Pulsing GEX gamma nodes along the peak ridge
+    nodes = [
+        (grid_2d[3][9], t["vol_cyan"], "2.4s"),
+        (grid_2d[5][9], t["ma_line"], "2.9s"),
+        (grid_2d[8][9], t["bull"], "2.1s"),
+    ]
+    node_parts = []
+    for (nx, ny), ncol, ndur in nodes:
+        node_parts.append(
+            f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="5" fill="{ncol}" fill-opacity="0.28">'
+            f'<animate attributeName="r" values="3.5;8;3.5" dur="{ndur}" repeatCount="indefinite"/>'
+            f'<animate attributeName="fill-opacity" values="0.45;0.08;0.45" dur="{ndur}" repeatCount="indefinite"/>'
+            f'</circle>'
+            f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="2.3" fill="{ncol}"/>'
+        )
+
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 132" width="920" height="132" role="img" aria-label="Animated 3D Volatility Surface and GEX Pulse">
+  <style>
+    .mono {{ font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace; }}
+  </style>
+  <rect x="0.5" y="0.5" width="919" height="131" rx="12" fill="{t['bg_outer']}" stroke="{t['border']}" stroke-width="1"/>
+  <rect x="14" y="14" width="222" height="104" rx="8" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+
+  <rect x="26" y="25" width="136" height="18" rx="4" fill="{t['accent_pill_bg']}" stroke="{t['accent']}" stroke-width="0.6" stroke-opacity="0.5"/>
+  <text x="94" y="38" text-anchor="middle" fill="{t['accent_pill_text']}" font-size="9.5" font-weight="700" class="mono">3D VOL SURFACE · GEX</text>
+
+  <text x="26" y="61" fill="{t['text_primary']}" font-size="12" font-weight="700" class="mono">IV(K, T) TOPOGRAPHY</text>
+  <text x="26" y="79" fill="{t['text_secondary']}" font-size="10" class="mono">σ = σ₀ + α·skew² + β·Γ(T)</text>
+
+  <circle cx="32" cy="100" r="3.5" fill="{t['bull']}">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="42" y="103" fill="{t['bull']}" font-size="9.5" font-weight="700" class="mono">GAMMA PULSE ACTIVE</text>
+
+  <g>
+    {chr(10) + "    ".join(mesh_parts)}
+    {chr(10) + "    ".join(node_parts)}
+  </g>
+</svg>
+"""
+
+
+def sparkline_svg(values: list[float], x0: float, y0: float, w: float, h: float, color: str, grad_id: str) -> str:
+    """Renders a crisp mini sparkline with subtle gradient fill."""
+    if len(values) < 2:
+        mid = y0 + h / 2.0
+        return f'<line x1="{x0:.1f}" y1="{mid:.1f}" x2="{x0 + w:.1f}" y2="{mid:.1f}" stroke="{color}" stroke-width="1.4" stroke-dasharray="3,3" stroke-opacity="0.6"/>'
+    vmin = min(values)
+    vmax = max(values)
+    span = max(1e-9, vmax - vmin)
+    pts = []
+    for i, val in enumerate(values):
+        px = x0 + (i / (len(values) - 1)) * w
+        py = y0 + h - ((val - vmin) / span) * (h - 4.0) - 2.0
+        pts.append((px, py))
+    d = smooth_svg_path(pts)
+    area = f"{d} L {pts[-1][0]:.1f} {y0 + h:.1f} L {pts[0][0]:.1f} {y0 + h:.1f} Z"
+    return (
+        f'<path d="{area}" fill="url(#{grad_id})"/>'
+        f'<path d="{d}" fill="none" stroke="{color}" stroke-width="1.7" stroke-linecap="round"/>'
+        f'<circle cx="{pts[-1][0]:.1f}" cy="{pts[-1][1]:.1f}" r="2.3" fill="{color}"/>'
+    )
+
+
+def render_osint_hud(stats: dict, macro: dict, theme_name: str) -> str:
+    """Feature #4: Renders the 920x184 OSINT // Macro Signal HUD SVG with animated radar + live feeds."""
+    t = THEMES[theme_name]
+    spy = macro.get("spy")
+    vix = macro.get("vix")
+    btc = macro.get("btc")
+
+    # VIX regime determination
+    if vix and vix["price"] is not None:
+        vp = vix["price"]
+        if vp >= 25.0:
+            regime, regime_col = "RISK: HIGH VOL", t["bear"]
+        elif vp >= 16.0:
+            regime, regime_col = "RISK: ELEVATED", t["warn"]
+        else:
+            regime, regime_col = "RISK: CALM", t["bull"]
+    else:
+        regime, regime_col = ("HUD: STANDBY" if not stats["live"] else "HUD: ACTIVE"), t["accent"]
+
+    def fmt_ticker_card(
+        x: float,
+        label: str,
+        sub: str,
+        data: dict | None,
+        prefix: str,
+        decimals: int,
+        invert_color: bool,
+        grad_id: str,
+    ) -> str:
+        if data and data.get("price") is not None:
+            val_str = f"{prefix}{data['price']:,.{decimals}f}"
+            pct = float(data.get("pct", 0.0))
+            sign = "+" if pct >= 0 else ""
+            pct_str = f"{sign}{pct:.2f}%"
+            is_good = (pct <= 0) if invert_color else (pct >= 0)
+            col = t["bull"] if is_good else t["bear"]
+            spark = sparkline_svg(data.get("history") or [], x + 14.0, 128.0, 138.0, 28.0, col, grad_id)
+        else:
+            val_str = "--"
+            pct_str = "AWAITING"
+            col = t["text_muted"]
+            spark = sparkline_svg([], x + 14.0, 128.0, 138.0, 28.0, col, grad_id)
+
+        return f"""  <rect x="{x:.1f}" y="42" width="166" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="{x + 14:.1f}" y="61" fill="{t['text_primary']}" font-size="11.5" font-weight="800" class="mono">{escape(label)}</text>
+  <text x="{x + 152:.1f}" y="61" text-anchor="end" fill="{t['text_muted']}" font-size="9" class="mono">{escape(sub)}</text>
+  <line x1="{x + 14:.1f}" y1="69" x2="{x + 152:.1f}" y2="69" stroke="{t['grid']}" stroke-width="1"/>
+  <text x="{x + 14:.1f}" y="93" fill="{t['text_primary']}" font-size="16" font-weight="800" class="mono">{escape(val_str)}</text>
+  <text x="{x + 14:.1f}" y="112" fill="{col}" font-size="11" font-weight="700" class="mono">{escape(pct_str)}</text>
+  {spark}"""
+
+    # Card 4: $KHALID 7D Code Velocity
+    last7 = [float(v) for v in (stats.get("last7_days") or [0] * 7)]
+    sum7 = int(sum(last7))
+    code_col = t["bull"] if sum7 > 0 else t["text_muted"]
+    code_spark = sparkline_svg(last7, 748.0, 128.0, 138.0, 28.0, t["accent"], "gradCode")
+    card4 = f"""  <rect x="734" y="42" width="166" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="748" y="61" fill="{t['text_primary']}" font-size="11.5" font-weight="800" class="mono">$KHALID</text>
+  <text x="886" y="61" text-anchor="end" fill="{t['text_muted']}" font-size="9" class="mono">7D PULSE</text>
+  <line x1="748" y1="69" x2="886" y2="69" stroke="{t['grid']}" stroke-width="1"/>
+  <text x="748" y="93" fill="{t['text_primary']}" font-size="16" font-weight="800" class="mono">+{sum7} CMTS</text>
+  <text x="748" y="112" fill="{code_col}" font-size="11" font-weight="700" class="mono">STREAK: {stats['current_streak']}D</text>
+  {code_spark}"""
+
+    c1 = fmt_ticker_card(200.0, "SPY", "S&P 500", spy, "$", 2, False, "gradSpy")
+    c2 = fmt_ticker_card(378.0, "^VIX", "VOLATILITY", vix, "", 2, True, "gradVix")
+    c3 = fmt_ticker_card(556.0, "BTC-USD", "BITCOIN", btc, "$", 0, False, "gradBtc")
+
+    # Radar center (103, 105), radius 48
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 184" width="920" height="184" role="img" aria-label="OSINT Macro Signal HUD">
+  <style>
+    .mono {{ font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace; }}
+  </style>
+  <defs>
+    <linearGradient id="radarBeam" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="{t['bull']}" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="{t['bull']}" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="gradSpy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="{t['bull']}" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="{t['bull']}" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gradVix" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="{t['bear']}" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="{t['bear']}" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gradBtc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="{t['vol_cyan']}" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="{t['vol_cyan']}" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gradCode" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="{t['accent']}" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="{t['accent']}" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="919" height="183" rx="14" fill="{t['bg_outer']}" stroke="{t['border']}" stroke-width="1"/>
+
+  <!-- Top HUD Header -->
+  <circle cx="30" cy="24" r="3.5" fill="{regime_col}">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="42" y="28" fill="{t['text_primary']}" font-size="11.5" font-weight="800" class="mono">OSINT // MACRO &amp; GEOPOLITICAL SIGNAL HUD</text>
+  <rect x="380" y="14" width="128" height="18" rx="4" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="0.8"/>
+  <text x="444" y="27" text-anchor="middle" fill="{regime_col}" font-size="9.5" font-weight="700" class="mono">{escape(regime)}</text>
+  <text x="900" y="28" text-anchor="end" fill="{t['text_muted']}" font-size="9.5" class="mono">FEEDS: SPY · ^VIX · BTC · GITHUB  //  {escape(stats['synced_at'])}</text>
+
+  <!-- Left Tactical Radar Panel -->
+  <rect x="20" y="42" width="166" height="126" rx="9" fill="{t['bg_panel']}" stroke="{t['border']}" stroke-width="1"/>
+  <circle cx="103" cy="105" r="48" fill="none" stroke="{t['grid']}" stroke-width="1.2"/>
+  <circle cx="103" cy="105" r="32" fill="none" stroke="{t['grid']}" stroke-width="1" stroke-dasharray="2,3"/>
+  <circle cx="103" cy="105" r="16" fill="none" stroke="{t['grid']}" stroke-width="1"/>
+  <line x1="51" y1="105" x2="155" y2="105" stroke="{t['grid']}" stroke-width="0.9"/>
+  <line x1="103" y1="53" x2="103" y2="157" stroke="{t['grid']}" stroke-width="0.9"/>
+
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 103 105" to="360 103 105" dur="5.5s" repeatCount="indefinite"/>
+    <path d="M 103 105 L 103 57 A 48 48 0 0 1 144.6 81 Z" fill="url(#radarBeam)"/>
+    <line x1="103" y1="105" x2="103" y2="57" stroke="{t['bull']}" stroke-width="1.5" stroke-opacity="0.85"/>
+  </g>
+
+  <circle cx="126" cy="84" r="2.6" fill="{t['bull']}">
+    <animate attributeName="opacity" values="0.2;1;0.2" dur="2.7s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="80" cy="120" r="2.3" fill="{t['accent']}">
+    <animate attributeName="opacity" values="0.2;1;0.2" dur="3.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="130" cy="126" r="2.2" fill="{t['vol_cyan']}">
+    <animate attributeName="opacity" values="0.15;0.95;0.15" dur="4.1s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="103" cy="105" r="2.8" fill="{t['bull']}"/>
+
+{c1}
+{c2}
+{c3}
+{card4}
+</svg>
+"""
 
 
 def main() -> int:
@@ -792,14 +1123,21 @@ def main() -> int:
         if not token and "--offline" not in sys.argv:
             print("No ACCESS_TOKEN or GITHUB_TOKEN found; generating baseline SVGs.", file=sys.stderr)
         stats = empty_initial_stats(username)
+        macro = {"spy": None, "vix": None, "btc": None}
     else:
         stats = fetch_github_stats(username, token)
+        macro = fetch_macro_signals()
 
-    for theme_name, filename in (("dark", "quant_dark.svg"), ("light", "quant_light.svg")):
-        content = render_svg(stats, theme_name)
-        with open(filename, "w", encoding="utf-8", newline="\n") as f:
-            f.write(content)
-        print(f"Wrote {filename} (live={stats['live']}, commits={stats['total_commits']})")
+    for theme_name in ("dark", "light"):
+        outputs = (
+            (f"quant_{theme_name}.svg", render_quant_svg(stats, theme_name)),
+            (f"vol_surface_{theme_name}.svg", render_vol_surface_banner(theme_name)),
+            (f"osint_hud_{theme_name}.svg", render_osint_hud(stats, macro, theme_name)),
+        )
+        for filename, content in outputs:
+            with open(filename, "w", encoding="utf-8", newline="\n") as f:
+                f.write(content)
+            print(f"Wrote {filename}")
 
     return 0
 

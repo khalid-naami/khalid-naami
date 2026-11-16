@@ -26,7 +26,12 @@
   <img src="https://komarev.com/ghpvc/?username=khalid-naami&label=Profile%20Views&color=6A5ACD&style=flat-square" alt="Profile Views" />
 </p>
 
----
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/khalid-naami/khalid-naami/main/vol_surface_dark.svg">
+    <img alt="3D Volatility Surface and GEX Pulse" src="https://raw.githubusercontent.com/khalid-naami/khalid-naami/main/vol_surface_light.svg" width="100%">
+  </picture>
+</p>
 
 ## 🏢 About Me & Dashboard Options
 
@@ -51,6 +56,7 @@
 
 <h3 align="center">Financial Intelligence · Market Research</h3>
 
+<!-- BLOG-POST-LIST:START -->
 <table align="center">
   <tr>
     <th>📄 Article</th>
@@ -89,6 +95,7 @@
     <td>May 13, 2026</td>
   </tr>
 </table>
+<!-- BLOG-POST-LIST:END -->
 
 <p align="center">
   <a href="https://khalidnaami.com/blog">
@@ -161,6 +168,13 @@
       <img alt="$KHALID Quantitative GitHub Terminal" src="https://raw.githubusercontent.com/khalid-naami/khalid-naami/main/quant_light.svg" width="100%">
     </picture>
   </a>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/khalid-naami/khalid-naami/main/osint_hud_dark.svg">
+    <img alt="OSINT and Macro Signal HUD" src="https://raw.githubusercontent.com/khalid-naami/khalid-naami/main/osint_hud_light.svg" width="100%">
+  </picture>
 </p>
 
 ---

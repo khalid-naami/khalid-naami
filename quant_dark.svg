@@ -30,19 +30,11 @@
   <text x="46" y="54" fill="#8b949e" font-size="10.5" class="mono">KHALID NAAMI  //  EXECUTION &amp; VOLATILITY TELEMETRY</text>
 
   <text x="720" y="25" text-anchor="end" fill="#6e7681" font-size="9.5" font-weight="600" class="mono">SIGNAL INDEX</text>
-<<<<<<< HEAD
   <text x="720" y="47" text-anchor="end" fill="#f0f6fc" font-size="19" font-weight="800" class="mono">0</text>
 
   <rect x="734" y="16" width="166" height="40" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
   <text x="817" y="32" text-anchor="middle" fill="#3fb950" font-size="11.5" font-weight="700" class="mono">READY</text>
   <text x="817" y="48" text-anchor="middle" fill="#6e7681" font-size="9.5" class="mono">SYNC: AWAITING SYNC</text>
-=======
-  <text x="720" y="47" text-anchor="end" fill="#f0f6fc" font-size="19" font-weight="800" class="mono">7,088</text>
-
-  <rect x="734" y="16" width="166" height="40" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-  <text x="817" y="32" text-anchor="middle" fill="#f85149" font-size="11.5" font-weight="700" class="mono">-60.0% WoW</text>
-  <text x="817" y="48" text-anchor="middle" fill="#6e7681" font-size="9.5" class="mono">SYNC: 2026-11-16 23:28 UTC</text>
->>>>>>> 340eb02fdda8d44f0b100504df9e7c9c1fdc0959
 
   <rect x="20" y="72" width="550" height="230" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
   <text x="36" y="93" fill="#f0f6fc" font-size="11.5" font-weight="700" class="mono">20W COMMIT VELOCITY · OHLC (LOG)</text>
@@ -55,20 +47,12 @@
 
   <g>
     
-<<<<<<< HEAD
 <line x1="38.0" y1="256.0" x2="520.0" y2="256.0" stroke="#21262d" stroke-width="1" stroke-dasharray="3,4"/>    <text x="528.0" y="259.0" fill="#6e7681" font-size="10" class="mono">0</text>    <line x1="38.0" y1="205.3" x2="520.0" y2="205.3" stroke="#21262d" stroke-width="1" stroke-dasharray="3,4"/>    <text x="528.0" y="208.3" fill="#6e7681" font-size="10" class="mono">0</text>    <line x1="38.0" y1="154.7" x2="520.0" y2="154.7" stroke="#21262d" stroke-width="1" stroke-dasharray="3,4"/>    <text x="528.0" y="157.7" fill="#6e7681" font-size="10" class="mono">0</text>    <line x1="38.0" y1="104.0" x2="520.0" y2="104.0" stroke="#21262d" stroke-width="1" stroke-dasharray="3,4"/>    <text x="528.0" y="107.0" fill="#6e7681" font-size="10" class="mono">0</text>    <line x1="38.0" y1="264.0" x2="520.0" y2="264.0" stroke="#21262d" stroke-width="1"/>    <text x="528.0" y="286.0" fill="#6e7681" font-size="9" class="mono">VOL</text>
     <line x1="38.0" y1="248.0" x2="520.0" y2="248.0" stroke="#7c6ef6" stroke-width="1.6" stroke-dasharray="5,5" stroke-opacity="0.65"/>
     <rect x="153.0" y="156.0" width="252" height="28" rx="6" fill="#27214d" stroke="#30363d" stroke-width="1"/>
     <text x="279.0" y="174.0" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="600" class="mono">PUSH TO SYNC LIVE GITHUB CANDLES</text>
     
 
-=======
-<line x1="38.0" y1="256.0" x2="520.0" y2="256.0" stroke="#21262d" stroke-width="1" stroke-dasharray="3,4"/>    <text x="528.0" y="259.0" fill="#6e7681" font-size="10" class="mono">0</text>    <line x1="38.0" y1="205.3" x2="520.0" y2="205.3" stroke="#21262d" stroke-width="1" stroke-dasharray="3,4"/>    <text x="528.0" y="208.3" fill="#6e7681" font-size="10" class="mono">8</text>    <line x1="38.0" y1="154.7" x2="520.0" y2="154.7" stroke="#21262d" stroke-width="1" stroke-dasharray="3,4"/>    <text x="528.0" y="157.7" fill="#6e7681" font-size="10" class="mono">81</text>    <line x1="38.0" y1="104.0" x2="520.0" y2="104.0" stroke="#21262d" stroke-width="1" stroke-dasharray="3,4"/>    <text x="528.0" y="107.0" fill="#6e7681" font-size="10" class="mono">745</text>    <line x1="38.0" y1="264.0" x2="520.0" y2="264.0" stroke="#21262d" stroke-width="1"/>    <text x="528.0" y="286.0" fill="#6e7681" font-size="9" class="mono">VOL</text>
-    <path d="M 50.0 142.1 C 54.1 143.0, 66.1 146.0, 74.2 147.6 C 82.2 149.3, 90.2 155.5, 98.2 152.2 C 106.3 149.0, 114.3 130.7, 122.4 128.3 C 130.4 125.8, 138.4 134.5, 146.4 137.6 C 154.5 140.6, 162.5 143.7, 170.6 146.8 C 178.6 149.9, 186.6 153.0, 194.7 156.0 C 202.7 159.1, 210.7 162.2, 218.8 165.2 C 226.8 168.2, 234.8 171.1, 242.9 174.1 C 250.9 177.1, 258.9 180.1, 267.0 183.1 C 275.0 186.0, 283.0 192.7, 291.1 191.9 C 299.1 191.1, 307.1 185.0, 315.2 178.2 C 323.2 171.4, 331.2 159.2, 339.2 151.0 C 347.3 142.7, 355.3 131.5, 363.4 128.9 C 371.4 126.3, 379.4 132.9, 387.5 135.6 C 395.5 138.2, 403.5 141.7, 411.6 144.8 C 419.6 147.9, 427.6 151.0, 435.7 154.0 C 443.7 157.1, 451.7 166.7, 459.8 163.2 C 467.8 159.8, 475.8 138.2, 483.9 133.3 C 491.9 128.3, 503.9 133.3, 508.0 133.4 L 508.0 256.0 L 50.0 256.0 Z" fill="url(#emaArea)"/>
-    <path d="M 50.0 142.1 C 54.1 143.0, 66.1 146.0, 74.2 147.6 C 82.2 149.3, 90.2 155.5, 98.2 152.2 C 106.3 149.0, 114.3 130.7, 122.4 128.3 C 130.4 125.8, 138.4 134.5, 146.4 137.6 C 154.5 140.6, 162.5 143.7, 170.6 146.8 C 178.6 149.9, 186.6 153.0, 194.7 156.0 C 202.7 159.1, 210.7 162.2, 218.8 165.2 C 226.8 168.2, 234.8 171.1, 242.9 174.1 C 250.9 177.1, 258.9 180.1, 267.0 183.1 C 275.0 186.0, 283.0 192.7, 291.1 191.9 C 299.1 191.1, 307.1 185.0, 315.2 178.2 C 323.2 171.4, 331.2 159.2, 339.2 151.0 C 347.3 142.7, 355.3 131.5, 363.4 128.9 C 371.4 126.3, 379.4 132.9, 387.5 135.6 C 395.5 138.2, 403.5 141.7, 411.6 144.8 C 419.6 147.9, 427.6 151.0, 435.7 154.0 C 443.7 157.1, 451.7 166.7, 459.8 163.2 C 467.8 159.8, 475.8 138.2, 483.9 133.3 C 491.9 128.3, 503.9 133.3, 508.0 133.4" fill="none" stroke="#a371f7" stroke-width="2.1" stroke-linecap="round"/>
-    
-<rect x="44.5" y="271.1" width="11.0" height="19.9" rx="1.5" fill="#3fb950" fill-opacity="0.30"/>    <line x1="50.0" y1="135.3" x2="50.0" y2="256.0" stroke="#3fb950" stroke-width="1.6" stroke-linecap="round"/>    <rect x="44.5" y="142.1" width="11.0" height="113.9" rx="2" fill="#3fb950" stroke="#238636" stroke-width="0.6"/>    <rect x="68.7" y="273.6" width="11.0" height="17.4" rx="1.5" fill="#f85149" fill-opacity="0.30"/>    <line x1="74.2" y1="138.0" x2="74.2" y2="171.8" stroke="#f85149" stroke-width="1.6" stroke-linecap="round"/>    <rect x="68.7" y="142.1" width="11.0" height="23.5" rx="2" fill="#f85149" stroke="#da3633" stroke-width="0.6"/>    <rect x="92.8" y="274.5" width="11.0" height="16.5" rx="1.5" fill="#f85149" fill-opacity="0.30"/>    <line x1="98.2" y1="157.1" x2="98.2" y2="170.7" stroke="#f85149" stroke-width="1.6" stroke-linecap="round"/>    <rect x="92.8" y="165.7" width="11.0" height="4.0" rx="2" fill="#f85149" stroke="#da3633" stroke-width="0.6"/>    <rect x="116.9" y="266.2" width="11.0" height="24.8" rx="1.5" fill="#3fb950" fill-opacity="0.30"/>    <line x1="122.4" y1="104.0" x2="122.4" y2="256.0" stroke="#3fb950" stroke-width="1.6" stroke-linecap="round"/>    <rect x="116.9" y="109.2" width="11.0" height="56.5" rx="2" fill="#3fb950" stroke="#238636" stroke-width="0.6"/>    <rect x="140.9" y="289.0" width="11.0" height="2.0" rx="1.5" fill="#f85149" fill-opacity="0.30"/>    <line x1="146.4" y1="109.2" x2="146.4" y2="256.0" stroke="#f85149" stroke-width="1.6" stroke-linecap="round"/>    <rect x="140.9" y="109.2" width="11.0" height="146.8" rx="2" fill="#f85149" stroke="#da3633" stroke-width="0.6"/>    <rect x="165.1" y="253.5" width="11.0" height="2.5" rx="1" fill="#f85149" fill-opacity="0.45"/>    <rect x="165.1" y="289.0" width="11.0" height="2.0" rx="1" fill="#f85149" fill-opacity="0.16"/>    <rect x="189.2" y="253.5" width="11.0" height="2.5" rx="1" fill="#f85149" fill-opacity="0.45"/>    <rect x="189.2" y="289.0" width="11.0" height="2.0" rx="1" fill="#f85149" fill-opacity="0.16"/>    <rect x="213.2" y="253.5" width="11.0" height="2.5" rx="1" fill="#f85149" fill-opacity="0.45"/>    <rect x="213.2" y="289.0" width="11.0" height="2.0" rx="1" fill="#f85149" fill-opacity="0.16"/>    <rect x="237.4" y="287.9" width="11.0" height="3.1" rx="1.5" fill="#f85149" fill-opacity="0.30"/>    <line x1="242.9" y1="230.8" x2="242.9" y2="256.0" stroke="#f85149" stroke-width="1.6" stroke-linecap="round"/>    <rect x="237.4" y="240.1" width="11.0" height="15.9" rx="2" fill="#f85149" stroke="#da3633" stroke-width="0.6"/>    <rect x="261.5" y="289.0" width="11.0" height="2.0" rx="1.5" fill="#f85149" fill-opacity="0.30"/>    <line x1="267.0" y1="230.8" x2="267.0" y2="256.0" stroke="#f85149" stroke-width="1.6" stroke-linecap="round"/>    <rect x="261.5" y="240.1" width="11.0" height="15.9" rx="2" fill="#f85149" stroke="#da3633" stroke-width="0.6"/>    <rect x="285.6" y="253.5" width="11.0" height="2.5" rx="1" fill="#f85149" fill-opacity="0.45"/>    <rect x="285.6" y="289.0" width="11.0" height="2.0" rx="1" fill="#f85149" fill-opacity="0.16"/>    <rect x="309.7" y="273.2" width="11.0" height="17.8" rx="1.5" fill="#3fb950" fill-opacity="0.30"/>    <line x1="315.2" y1="153.6" x2="315.2" y2="256.0" stroke="#3fb950" stroke-width="1.6" stroke-linecap="round"/>    <rect x="309.7" y="163.5" width="11.0" height="92.5" rx="2" fill="#3fb950" stroke="#238636" stroke-width="0.6"/>    <rect x="333.8" y="270.7" width="11.0" height="20.3" rx="1.5" fill="#3fb950" fill-opacity="0.30"/>    <line x1="339.2" y1="126.1" x2="339.2" y2="177.1" stroke="#3fb950" stroke-width="1.6" stroke-linecap="round"/>    <rect x="333.8" y="130.9" width="11.0" height="32.6" rx="2" fill="#3fb950" stroke="#238636" stroke-width="0.6"/>    <rect x="357.9" y="266.3" width="11.0" height="24.7" rx="1.5" fill="#3fb950" fill-opacity="0.30"/>    <line x1="363.4" y1="105.1" x2="363.4" y2="138.8" stroke="#3fb950" stroke-width="1.6" stroke-linecap="round"/>    <rect x="357.9" y="110.4" width="11.0" height="20.5" rx="2" fill="#3fb950" stroke="#238636" stroke-width="0.6"/>    <rect x="382.0" y="272.8" width="11.0" height="18.2" rx="1.5" fill="#f85149" fill-opacity="0.30"/>    <line x1="387.5" y1="109.1" x2="387.5" y2="167.5" stroke="#f85149" stroke-width="1.6" stroke-linecap="round"/>    <rect x="382.0" y="110.4" width="11.0" height="50.7" rx="2" fill="#f85149" stroke="#da3633" stroke-width="0.6"/>    <rect x="406.1" y="289.0" width="11.0" height="2.0" rx="1.5" fill="#f85149" fill-opacity="0.30"/>    <line x1="411.6" y1="160.8" x2="411.6" y2="256.0" stroke="#f85149" stroke-width="1.6" stroke-linecap="round"/>    <rect x="406.1" y="161.2" width="11.0" height="94.8" rx="2" fill="#f85149" stroke="#da3633" stroke-width="0.6"/>    <rect x="430.2" y="253.5" width="11.0" height="2.5" rx="1" fill="#f85149" fill-opacity="0.45"/>    <rect x="430.2" y="289.0" width="11.0" height="2.0" rx="1" fill="#f85149" fill-opacity="0.16"/>    <rect x="454.2" y="253.5" width="11.0" height="2.5" rx="1" fill="#f85149" fill-opacity="0.45"/>    <rect x="454.2" y="289.0" width="11.0" height="2.0" rx="1" fill="#f85149" fill-opacity="0.16"/>    <rect x="478.4" y="266.0" width="11.0" height="25.0" rx="1.5" fill="#3fb950" fill-opacity="0.30"/>    <line x1="483.9" y1="106.5" x2="483.9" y2="256.0" stroke="#3fb950" stroke-width="1.6" stroke-linecap="round"/>    <rect x="478.4" y="112.6" width="11.0" height="143.4" rx="2" fill="#3fb950" stroke="#238636" stroke-width="0.6"/>    <rect x="502.5" y="269.9" width="11.0" height="21.1" rx="1.5" fill="#f85149" fill-opacity="0.30"/>    <line x1="508.0" y1="109.9" x2="508.0" y2="137.2" stroke="#f85149" stroke-width="1.6" stroke-linecap="round"/>    <rect x="502.5" y="112.6" width="11.0" height="21.0" rx="2" fill="#f85149" stroke="#da3633" stroke-width="0.6"/>    <circle cx="508.0" cy="133.6" r="4.5" fill="#f85149" fill-opacity="0.32"><animate attributeName="r" values="3.5;7.5;3.5" dur="2.2s" repeatCount="indefinite"/><animate attributeName="fill-opacity" values="0.45;0.1;0.45" dur="2.2s" repeatCount="indefinite"/></circle><circle cx="508.0" cy="133.6" r="2.3" fill="#f85149"/>
->>>>>>> 340eb02fdda8d44f0b100504df9e7c9c1fdc0959
   </g>
 
   <rect x="584" y="72" width="316" height="110" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
@@ -76,51 +60,40 @@
   <line x1="600" y1="100" x2="884" y2="100" stroke="#21262d" stroke-width="1"/>
 
   <text x="600" y="118" fill="#6e7681" font-size="9.5" class="mono">COMMITS (1Y)</text>
-<<<<<<< HEAD
   <text x="600" y="137" fill="#f0f6fc" font-size="17" font-weight="700" class="mono">0</text>
-=======
-  <text x="600" y="137" fill="#f0f6fc" font-size="17" font-weight="700" class="mono">5,683</text>
->>>>>>> 340eb02fdda8d44f0b100504df9e7c9c1fdc0959
 
   <text x="748" y="118" fill="#6e7681" font-size="9.5" class="mono">REPOSITORIES</text>
-  <text x="748" y="137" fill="#f0f6fc" font-size="17" font-weight="700" class="mono">70</text>
+  <text x="748" y="137" fill="#f0f6fc" font-size="17" font-weight="700" class="mono">0</text>
 
   <text x="600" y="156" fill="#6e7681" font-size="9.5" class="mono">STARS EARNED</text>
-  <text x="600" y="174" fill="#7c6ef6" font-size="17" font-weight="700" class="mono">22</text>
+  <text x="600" y="174" fill="#7c6ef6" font-size="17" font-weight="700" class="mono">0</text>
 
   <text x="748" y="156" fill="#6e7681" font-size="9.5" class="mono">FOLLOWERS</text>
-  <text x="748" y="174" fill="#f0f6fc" font-size="17" font-weight="700" class="mono">2</text>
+  <text x="748" y="174" fill="#f0f6fc" font-size="17" font-weight="700" class="mono">0</text>
 
   <rect x="584" y="194" width="316" height="108" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
   <text x="600" y="215" fill="#8b949e" font-size="10.5" font-weight="700" class="mono">PORTFOLIO ALLOCATION</text>
   <g clip-path="url(#allocClip)">
     
-<<<<<<< HEAD
 <rect x="600.0" y="228.0" width="284.0" height="10.0" fill="#21262d"/>
   </g>
   
 <text x="742" y="272" text-anchor="middle" fill="#6e7681" font-size="11" class="mono">AWAITING REPO ALLOCATION SYNC</text>
-=======
-<rect x="600.0" y="228.0" width="155.3" height="10.0" fill="#DA5B0B"/>    <rect x="755.3" y="228.0" width="69.3" height="10.0" fill="#3572A5"/>    <rect x="824.6" y="228.0" width="42.3" height="10.0" fill="#f1e05a"/>    <rect x="867.0" y="228.0" width="14.5" height="10.0" fill="#3178c6"/>    <rect x="881.4" y="228.0" width="2.6" height="10.0" fill="#8b949e"/>
-  </g>
-  
-<circle cx="604.0" cy="258.0" r="4" fill="#DA5B0B"/><text x="614.0" y="262.0" fill="#f0f6fc" font-size="11.5" class="mono">Jupyter</text><text x="734.0" y="262.0" text-anchor="end" fill="#8b949e" font-size="11" class="mono">54.7%</text>  <circle cx="749.0" cy="258.0" r="4" fill="#3572A5"/><text x="759.0" y="262.0" fill="#f0f6fc" font-size="11.5" class="mono">Python</text><text x="879.0" y="262.0" text-anchor="end" fill="#8b949e" font-size="11" class="mono">24.4%</text>  <circle cx="604.0" cy="280.0" r="4" fill="#f1e05a"/><text x="614.0" y="284.0" fill="#f0f6fc" font-size="11.5" class="mono">JavaScript</text><text x="734.0" y="284.0" text-anchor="end" fill="#8b949e" font-size="11" class="mono">14.9%</text>  <circle cx="749.0" cy="280.0" r="4" fill="#3178c6"/><text x="759.0" y="284.0" fill="#f0f6fc" font-size="11.5" class="mono">TypeScript</text><text x="879.0" y="284.0" text-anchor="end" fill="#8b949e" font-size="11" class="mono">5.1%</text>
->>>>>>> 340eb02fdda8d44f0b100504df9e7c9c1fdc0959
 
   <rect x="20" y="314" width="880" height="68" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
   <text x="36" y="333" fill="#8b949e" font-size="10" font-weight="700" class="mono">GEX // VOLATILITY SURFACE &amp; STREAK</text>
 
   <text x="36" y="352" fill="#6e7681" font-size="9.5" class="mono">CURRENT STREAK</text>
-  <text x="36" y="370" fill="#3fb950" font-size="15" font-weight="700" class="mono">2d</text>
+  <text x="36" y="370" fill="#3fb950" font-size="15" font-weight="700" class="mono">0d</text>
 
   <text x="144" y="352" fill="#6e7681" font-size="9.5" class="mono">BEST STREAK</text>
-  <text x="144" y="370" fill="#f0f6fc" font-size="15" font-weight="700" class="mono">24d</text>
+  <text x="144" y="370" fill="#f0f6fc" font-size="15" font-weight="700" class="mono">0d</text>
 
   <text x="242" y="352" fill="#6e7681" font-size="9.5" class="mono">ACTIVE DAYS</text>
-  <text x="242" y="370" fill="#f0f6fc" font-size="15" font-weight="700" class="mono">74/365</text>
+  <text x="242" y="370" fill="#f0f6fc" font-size="15" font-weight="700" class="mono">0/365</text>
 
   <text x="336" y="352" fill="#6e7681" font-size="9.5" class="mono">PEAK WK</text>
-  <text x="336" y="370" fill="#7c6ef6" font-size="15" font-weight="700" class="mono">754</text>
+  <text x="336" y="370" fill="#7c6ef6" font-size="15" font-weight="700" class="mono">0</text>
 
   <line x1="418" y1="326" x2="418" y2="372" stroke="#21262d" stroke-width="1"/>
   <path d="M 450.0 333.7 C 452.7 333.6, 460.7 333.2, 466.0 333.0 C 471.3 332.8, 476.7 332.5, 482.0 332.3 C 487.3 332.1, 492.7 331.9, 498.0 331.7 C 503.3 331.5, 508.7 331.3, 514.0 331.1 C 519.3 330.9, 524.7 330.7, 530.0 330.5 C 535.3 330.4, 540.7 330.2, 546.0 330.0 C 551.3 329.8, 556.7 329.6, 562.0 329.3 C 567.3 329.1, 572.7 328.8, 578.0 328.6 C 583.3 328.3, 588.7 327.9, 594.0 327.6 C 599.3 327.3, 604.7 326.9, 610.0 326.5 C 615.3 326.2, 620.7 325.8, 626.0 325.4 C 631.3 325.1, 636.7 324.7, 642.0 324.4 C 647.3 324.1, 652.7 323.9, 658.0 323.7 C 663.3 323.6, 668.7 323.4, 674.0 323.4 C 679.3 323.4, 684.7 323.4, 690.0 323.6 C 695.3 323.7, 700.7 323.9, 706.0 324.1 C 711.3 324.4, 716.7 324.7, 722.0 325.0 C 727.3 325.4, 732.7 325.8, 738.0 326.1 C 743.3 326.5, 748.7 326.9, 754.0 327.3 C 759.3 327.6, 764.7 328.0, 770.0 328.3 C 775.3 328.7, 780.7 329.0, 786.0 329.3 C 791.3 329.6, 796.7 329.9, 802.0 330.1 C 807.3 330.4, 812.7 330.7, 818.0 330.9 C 823.3 331.2, 828.7 331.4, 834.0 331.7 C 839.3 331.9, 844.7 332.2, 850.0 332.4 C 855.3 332.7, 860.7 333.0, 866.0 333.2 C 871.3 333.5, 879.3 333.9, 882.0 334.0" fill="none" stroke="#58a6ff" stroke-width="1.15" stroke-opacity="0.25"><animate attributeName="stroke-opacity" values="0.25;0.15;0.25" dur="4.2s" repeatCount="indefinite"/></path>
@@ -135,15 +108,9 @@
 
   <g clip-path="url(#tickerClip)">
     <g>
-<<<<<<< HEAD
       <animateTransform attributeName="transform" type="translate" from="0 0" to="-2225 0" dur="46s" repeatCount="indefinite"/>
       <text x="120" y="414" fill="#8b949e" font-size="11" class="mono">▲ $KHALID   •   COMMITS: 0   •   REPOS: 0   •   STARS: 0   •   STACK: PYTHON / JS / RUST   •   PROJECTS: Dashboard Options · Quant AI Systems   •   BLOG: Abqaiq Refinery Strike: Jizan Shutdown · UAE Covert Support for Israel: Leaked Secrets · Biyadah Battle: Captain Recanati Killed   •   STATUS: STANDBY   •   </text>
       <text x="2345" y="414" fill="#8b949e" font-size="11" class="mono">▲ $KHALID   •   COMMITS: 0   •   REPOS: 0   •   STARS: 0   •   STACK: PYTHON / JS / RUST   •   PROJECTS: Dashboard Options · Quant AI Systems   •   BLOG: Abqaiq Refinery Strike: Jizan Shutdown · UAE Covert Support for Israel: Leaked Secrets · Biyadah Battle: Captain Recanati Killed   •   STATUS: STANDBY   •   </text>
-=======
-      <animateTransform attributeName="transform" type="translate" from="0 0" to="-2708 0" dur="56s" repeatCount="indefinite"/>
-      <text x="120" y="414" fill="#8b949e" font-size="11" class="mono">▲ $KHALID   •   COMMITS: 5,683   •   REPOS: 70   •   STARS: 22   •   STACK: JUPYTER 55% / PYTHON 24% / JAVASCRIPT 15%   •   PROJECTS: khalid-naami.github.io ★1 · actor-global-ecommerce-scraper · actor-etsy-scraper   •   BLOG: Abqaiq Refinery Strike: Jizan Shutdown · UAE Covert Support for Israel: Leaked Secrets · Biyadah Battle: Captain Recanati Killed   •   STATUS: LIVE   •   </text>
-      <text x="2828" y="414" fill="#8b949e" font-size="11" class="mono">▲ $KHALID   •   COMMITS: 5,683   •   REPOS: 70   •   STARS: 22   •   STACK: JUPYTER 55% / PYTHON 24% / JAVASCRIPT 15%   •   PROJECTS: khalid-naami.github.io ★1 · actor-global-ecommerce-scraper · actor-etsy-scraper   •   BLOG: Abqaiq Refinery Strike: Jizan Shutdown · UAE Covert Support for Israel: Leaked Secrets · Biyadah Battle: Captain Recanati Killed   •   STATUS: LIVE   •   </text>
->>>>>>> 340eb02fdda8d44f0b100504df9e7c9c1fdc0959
     </g>
   </g>
 </svg>

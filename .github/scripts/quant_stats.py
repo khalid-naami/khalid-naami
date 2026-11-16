@@ -10,6 +10,7 @@ Uses Python standard library only.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import datetime
 import html
@@ -1247,12 +1248,38 @@ def render_osint_hud(stats: dict, macro: dict, theme_name: str) -> str:
 """
 
 
-def main() -> int:
+def _should_skip_standby_overwrite(path: str, filename: str, force_baseline: bool) -> bool:
+    """Protect existing live data SVGs from accidental local offline overwrites."""
+    if force_baseline or filename.startswith("vol_surface_") or not os.path.exists(path):
+        return False
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            existing = f.read()
+    except OSError:
+        return False
+    if "<<<<<<< " in existing or "AWAITING" in existing or "STATUS: STANDBY" in existing:
+        return False
+    return "STATUS: LIVE" in existing or "HUD: LIVE" in existing
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Generate Khalid Naami profile SVGs.")
+    parser.add_argument("--offline", action="store_true", help="Skip network calls and render baseline SVGs.")
+    parser.add_argument("--out-dir", default=".", help="Output directory for generated SVG files.")
+    parser.add_argument(
+        "--force-baseline",
+        action="store_true",
+        help="Allow overwriting existing live SVGs when running offline or without a token.",
+    )
+    args = parser.parse_args(argv)
+
+    os.makedirs(args.out_dir, exist_ok=True)
     username = os.environ.get("USER_NAME") or DEFAULT_USER
     token = (os.environ.get("ACCESS_TOKEN") or os.environ.get("GITHUB_TOKEN") or "").strip()
 
-    if "--offline" in sys.argv or not token:
-        if not token and "--offline" not in sys.argv:
+    is_offline = args.offline or not token
+    if is_offline:
+        if not token and not args.offline:
             print("No ACCESS_TOKEN or GITHUB_TOKEN found; generating baseline SVGs.", file=sys.stderr)
         stats = empty_initial_stats(username)
         macro = {"spx": None, "gold": None, "btc": None}
@@ -1267,9 +1294,13 @@ def main() -> int:
             (f"osint_hud_{theme_name}.svg", render_osint_hud(stats, macro, theme_name)),
         )
         for filename, content in outputs:
-            with open(filename, "w", encoding="utf-8", newline="\n") as f:
+            out_path = os.path.join(args.out_dir, filename)
+            if is_offline and _should_skip_standby_overwrite(out_path, filename, args.force_baseline):
+                print(f"Preserved live {out_path} (pass --force-baseline to overwrite offline)")
+                continue
+            with open(out_path, "w", encoding="utf-8", newline="\n") as f:
                 f.write(content)
-            print(f"Wrote {filename}")
+            print(f"Wrote {out_path}")
 
     return 0
 

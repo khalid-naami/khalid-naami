@@ -329,6 +329,26 @@ def fetch_github_stats(username: str, token: str) -> dict:
     }
 
 
+def fetch_yf_ticker(symbol: str) -> dict | None:
+    """Fetches latest close/price, 1d % change, and 10d closes via yfinance if installed."""
+    try:
+        import yfinance as yf  # type: ignore
+    except ImportError:
+        return None
+    try:
+        hist = yf.Ticker(symbol).history(period="1mo", interval="1d", auto_adjust=False)
+        if hist is None or hist.empty or "Close" not in hist:
+            return None
+        closes = [float(x) for x in hist["Close"].dropna().tolist()][-10:]
+        if not closes:
+            return None
+        price = closes[-1]
+        pct = ((price - closes[-2]) / closes[-2]) * 100.0 if len(closes) >= 2 and closes[-2] else 0.0
+        return {"price": price, "pct": pct, "history": closes}
+    except Exception:
+        return None
+
+
 def fetch_yahoo_ticker(symbol: str) -> dict | None:
     """Fetches latest price, 1d % change, and 10d closes from Yahoo Finance chart API."""
     encoded = urllib.parse.quote(symbol, safe="")
@@ -372,8 +392,100 @@ def fetch_stooq_ticker(symbol: str) -> dict | None:
         return None
 
 
+def fetch_fred_spx_history() -> list[float]:
+    """Fetches last 10 daily S&P 500 closes from Federal Reserve FRED CSV."""
+    try:
+        raw = http_get_text("https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500", timeout=12)
+        closes: list[float] = []
+        reader = csv.reader(io.StringIO(raw))
+        next(reader, None)  # skip header
+        for row in reader:
+            if len(row) >= 2 and row[1] not in ("", "."):
+                try:
+                    closes.append(float(row[1]))
+                except ValueError:
+                    pass
+        return closes[-10:]
+    except Exception:
+        return []
+
+
+def fetch_cnbc_spx() -> dict | None:
+    """Fallback live S&P 500 quote from CNBC + FRED 10d sparkline."""
+    history = fetch_fred_spx_history()
+    try:
+        url = (
+            "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol"
+            "?symbols=.SPX&requestMethod=itv&noform=1&exthrs=1&output=json"
+        )
+        payload = json.loads(http_get_text(url, timeout=12))
+        q = payload["FormattedQuoteResult"]["FormattedQuote"][0]
+        price = float(str(q["last"]).replace(",", ""))
+        raw_pct = str(q.get("change_pct", "")).replace("%", "").replace(",", "").strip()
+        if raw_pct:
+            pct = float(raw_pct)
+        else:
+            prev = str(q.get("previous_day_closing", "")).replace(",", "").strip()
+            pct = ((price - float(prev)) / float(prev)) * 100.0 if prev else 0.0
+        if not history:
+            history = [price]
+        elif abs(history[-1] - price) > 0.01:
+            history = (history + [price])[-10:]
+        return {"price": price, "pct": pct, "history": history}
+    except Exception:
+        if len(history) >= 2:
+            price = history[-1]
+            pct = ((price - history[-2]) / history[-2]) * 100.0 if history[-2] else 0.0
+            return {"price": price, "pct": pct, "history": history}
+        return None
+
+
+def fetch_coingecko_chart(coin_id: str) -> dict | None:
+    """Fetches live price, 24h % change, and 10d daily history from CoinGecko market_chart."""
+    try:
+        url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days=10&interval=daily"
+        data = json.loads(http_get_text(url, timeout=12))
+        prices = [float(pt[1]) for pt in data.get("prices", []) if len(pt) >= 2]
+        if not prices:
+            return None
+        price = prices[-1]
+        prev = prices[-2] if len(prices) >= 2 else price
+        pct = ((price - prev) / prev) * 100.0 if prev else 0.0
+        return {"price": price, "pct": pct, "history": prices[-10:]}
+    except Exception:
+        return None
+
+
+def fetch_gold_fallback() -> dict | None:
+    """Fallback for spot Gold (XAU/USD) via GoldPrice / gold-api / CoinGecko pax-gold."""
+    cg = fetch_coingecko_chart("pax-gold")
+    history = cg["history"] if cg else []
+
+    try:
+        data = json.loads(http_get_text("https://data-asg.goldprice.org/dbXRates/USD", timeout=12))
+        item = data["items"][0]
+        price = float(item["xauPrice"])
+        pct = float(item.get("pcXau", 0.0))
+        return {"price": price, "pct": pct, "history": history}
+    except Exception:
+        pass
+
+    try:
+        data = json.loads(http_get_text("https://api.gold-api.com/price/XAU", timeout=12))
+        price = float(data["price"])
+        pct = cg["pct"] if cg else 0.0
+        return {"price": price, "pct": pct, "history": history}
+    except Exception:
+        pass
+
+    return cg
+
+
 def fetch_btc_fallback() -> dict | None:
     """Fallback for BTC-USD via CoinGecko / Coinbase."""
+    cg_chart = fetch_coingecko_chart("bitcoin")
+    if cg_chart:
+        return cg_chart
     try:
         data = json.loads(
             http_get_text(
@@ -393,10 +505,16 @@ def fetch_btc_fallback() -> dict | None:
 
 
 def fetch_macro_signals() -> dict:
-    """Fetches SPX (^GSPC), GOLD (GC=F / XAUUSD), and BTC-USD from free public market endpoints."""
-    spx = fetch_yahoo_ticker("^GSPC") or fetch_stooq_ticker("^spx")
-    gold = fetch_yahoo_ticker("GC=F") or fetch_yahoo_ticker("XAUUSD=X") or fetch_stooq_ticker("xauusd")
-    btc = fetch_yahoo_ticker("BTC-USD") or fetch_btc_fallback()
+    """Fetches SPX, GOLD, and BTC-USD via yfinance with multi-source public fallbacks."""
+    spx = fetch_yf_ticker("^GSPC") or fetch_cnbc_spx() or fetch_yahoo_ticker("^GSPC") or fetch_stooq_ticker("^spx")
+    gold = (
+        fetch_yf_ticker("GC=F")
+        or fetch_yf_ticker("XAUUSD=X")
+        or fetch_gold_fallback()
+        or fetch_yahoo_ticker("GC=F")
+        or fetch_stooq_ticker("xauusd")
+    )
+    btc = fetch_yf_ticker("BTC-USD") or fetch_btc_fallback() or fetch_yahoo_ticker("BTC-USD")
     return {"spx": spx, "gold": gold, "btc": btc}
 
 

@@ -34,7 +34,7 @@
 
   <rect x="734" y="16" width="166" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
   <text x="817" y="32" text-anchor="middle" fill="#cf222e" font-size="11.5" font-weight="700" class="mono">-47.1% WoW</text>
-  <text x="817" y="48" text-anchor="middle" fill="#6e7781" font-size="9.5" class="mono">SYNC: 2026-11-18 20:03 UTC</text>
+  <text x="817" y="48" text-anchor="middle" fill="#6e7781" font-size="9.5" class="mono">SYNC: 2026-11-19 06:13 UTC</text>
 
   <rect x="20" y="72" width="550" height="230" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
   <text x="36" y="93" fill="#1f2328" font-size="11.5" font-weight="700" class="mono">20W COMMIT VELOCITY · OHLC (LOG)</text>
@@ -107,9 +107,9 @@
 
   <g clip-path="url(#tickerClip)">
     <g>
-      <animateTransform attributeName="transform" type="translate" from="0 0" to="-2708 0" dur="56s" repeatCount="indefinite"/>
-      <text x="120" y="414" fill="#57606a" font-size="11" class="mono">▲ $KHALID   •   COMMITS: 5,749   •   REPOS: 70   •   STARS: 22   •   STACK: JUPYTER 55% / PYTHON 24% / JAVASCRIPT 15%   •   PROJECTS: khalid-naami.github.io ★1 · actor-global-ecommerce-scraper · actor-etsy-scraper   •   BLOG: Abqaiq Refinery Strike: Jizan Shutdown · UAE Covert Support for Israel: Leaked Secrets · Biyadah Battle: Captain Recanati Killed   •   STATUS: LIVE   •   </text>
-      <text x="2828" y="414" fill="#57606a" font-size="11" class="mono">▲ $KHALID   •   COMMITS: 5,749   •   REPOS: 70   •   STARS: 22   •   STACK: JUPYTER 55% / PYTHON 24% / JAVASCRIPT 15%   •   PROJECTS: khalid-naami.github.io ★1 · actor-global-ecommerce-scraper · actor-etsy-scraper   •   BLOG: Abqaiq Refinery Strike: Jizan Shutdown · UAE Covert Support for Israel: Leaked Secrets · Biyadah Battle: Captain Recanati Killed   •   STATUS: LIVE   •   </text>
+      <animateTransform attributeName="transform" type="translate" from="0 0" to="-2687 0" dur="56s" repeatCount="indefinite"/>
+      <text x="120" y="414" fill="#57606a" font-size="11" class="mono">▲ $KHALID   •   COMMITS: 5,749   •   REPOS: 70   •   STARS: 22   •   STACK: JUPYTER 55% / PYTHON 24% / JAVASCRIPT 15%   •   PROJECTS: actor-alibaba-scraper · actor-aliexpress-scraper · khalid-naami.github.io ★1   •   BLOG: Abqaiq Refinery Strike: Jizan Shutdown · UAE Covert Support for Israel: Leaked Secrets · Biyadah Battle: Captain Recanati Killed   •   STATUS: LIVE   •   </text>
+      <text x="2807" y="414" fill="#57606a" font-size="11" class="mono">▲ $KHALID   •   COMMITS: 5,749   •   REPOS: 70   •   STARS: 22   •   STACK: JUPYTER 55% / PYTHON 24% / JAVASCRIPT 15%   •   PROJECTS: actor-alibaba-scraper · actor-aliexpress-scraper · khalid-naami.github.io ★1   •   BLOG: Abqaiq Refinery Strike: Jizan Shutdown · UAE Covert Support for Israel: Leaked Secrets · Biyadah Battle: Captain Recanati Killed   •   STATUS: LIVE   •   </text>
     </g>
   </g>
 </svg>

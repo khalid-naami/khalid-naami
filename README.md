@@ -7,8 +7,8 @@
     <img src="https://img.shields.io/badge/Personal%20Site-khalidnaami.com-6A5ACD?style=for-the-badge&logo=google-chrome&logoColor=white" />
   </a>
   <img src="https://img.shields.io/badge/Company-Dashboard%20Options-0D1117?style=for-the-badge&logo=chartdotjs&logoColor=6A5ACD" />
-  <a href="mailto:khalidnaami66@gmail.com">
-    <img src="https://img.shields.io/badge/Email-khalidnaami66@gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" />
+  <a href="mailto:research@khalidnaami.com">
+    <img src="https://img.shields.io/badge/Email-research@khalidnaami.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" />
   </a>
 </p>
 
@@ -46,7 +46,7 @@
 - 🌍 Strategic analyst specializing in **Geopolitics** and **Global Macroeconomics** (OSINT)
 - 💬 Ask me about **Python, JavaScript, Options Data, Market Microstructure, Rust, React**
 - 🌐 Personal site: **[khalidnaami.com](https://khalidnaami.com)**
-- 📫 Reach me: **khalidnaami66@gmail.com**
+- 📫 Reach me: **research@khalidnaami.com**
 - 🗣️ Languages: **Arabic · English · French**
 - 🎓 Education: **Business Administration · Software Engineering · Data Analysis**
 
